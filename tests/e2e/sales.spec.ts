@@ -165,6 +165,6 @@ test("shared product management is inside Sales and other modules stay unchanged
   await expect(
     page.getByRole("button", { name: "Add product", exact: true }),
   ).toBeDisabled();
-  await page.goto("/modules/justech-marketing/overview");
+  await page.goto("/modules/alfikr-marketing/overview");
   await expect(page.getByText("Planned module", { exact: true })).toBeVisible();
 });

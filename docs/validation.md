@@ -39,3 +39,21 @@ New database coverage executes migrations 0001 and 0002 in PostgreSQL (PGlite), 
 The browser run verifies exact workbook headers plus Annual Amount/Currency, form labels, tabs, filters, year selection and zero-state currency display, sticky table columns, responsive layout, API/mutation denial and unchanged non-Sales starter pages. Unauthenticated Sales POSTs are rejected in the request proxy before action decoding; a regression check verifies HTTP 401 and a subsequent healthy Overview request.
 
 The environment has no Supabase project configured. These successful checks do **not** establish hosted Supabase Authentication, PostgREST integration or authenticated browser CRUD persistence. Those remain explicit checks in `docs/justech-sales.md`. No customer information was imported and no website was deployed.
+
+## Marketing, Operations and Training increment — 2026-10-27
+
+| Check | Result |
+| --- | --- |
+| ESLint and strict TypeScript | Passed, 0 lint warnings |
+| Unit/PostgreSQL tests | 52 passed, 0 failed, 0 skipped |
+| Production build | Passed |
+| Desktop/mobile browser tests | 40 passed, 0 failed, 0 skipped |
+| Visual inspection | Three department Overviews and a mobile follow-up form inspected; no observed browser errors or mobile overflow |
+
+The new database suite applies migrations 0001 through 0005 together. It creates, reads, edits and deletes all ten department record types under authenticated PostgreSQL roles, checks real Overview counts, related employees/products/institutions/contacts/sessions, input constraints, module isolation, shared product access without Sales access, stale version rejection, administrator deletion and immutable audit metadata. It also verifies Operations completion timestamps, prevents access/mutation of unrelated existing activities, and confirms Sales persistence after the additive migrations.
+
+The browser suite includes the existing Sales and application-shell regressions. New coverage checks all ten tables/forms against workbook headings and the latest user label corrections, date controls, three six-indicator Overviews, filter/sort submissions, project/area and contact/organization choices, legacy Operations redirects, unauthorized lookup/mutation rejection, responsive navigation and unchanged Al-Fikr/Workspace starter pages.
+
+The two initial browser failures were test locator mismatches for the sort-order dropdown; the corrected role-based locator passed on desktop and mobile in the final 40-test run. No test assertions or access policies were disabled.
+
+Hosted Supabase Authentication/PostgREST and authenticated browser CRUD were unavailable in this execution environment. PostgreSQL tests use isolated synthetic fixtures only; no customer data was seeded or migrated, no existing business records were reset and no website deployment was attempted. Apply new migrations 0003, 0004 and 0005 to the existing configured project before validating hosted persistence.

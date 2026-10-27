@@ -1,3 +1,5 @@
+import { DepartmentPage } from "@/components/departments/page";
+import { isDepartment } from "@/lib/departments/config";
 import { SalesPage } from "@/components/sales/page";
 import { notFound } from "next/navigation";
 import { allPages, navigation } from "@/lib/navigation";
@@ -12,6 +14,15 @@ export default async function Module({
   const { slug } = await params;
   if (slug[0] === "justech-sales")
     return <SalesPage slug={slug.slice(1)} params={await searchParams} />;
+  const department = slug[0]?.replace(/^justech-/, "");
+  if (slug[0]?.startsWith("justech-") && isDepartment(department))
+    return (
+      <DepartmentPage
+        department={department}
+        slug={slug.slice(1)}
+        params={await searchParams}
+      />
+    );
   const path = "/modules/" + slug.join("/");
   const page = allPages.find((p) => p.href === path);
   if (!page) notFound();

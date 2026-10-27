@@ -1711,3 +1711,107 @@ textarea {
     gap: 9px 16px;
   }
 }
+
+/* Additional Justech departments use the existing CRM design system. */
+.department-indicators {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 25px;
+}
+.department-indicators .metric > div {
+  font-size: 12px;
+}
+.department-indicators .metric small {
+  font-size: 11px;
+  line-height: 1.7;
+  min-height: 38px;
+}
+.department-section-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0 23px 20px;
+  gap: 0 24px;
+}
+.department-section-links > a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 19px 0;
+  border-top: 1px solid var(--border);
+}
+.department-section-links strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+.department-section-links small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.department-section-links svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.department-list-count {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 15px;
+}
+.department-help {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 20px;
+}
+.department-choice {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.department-choice legend {
+  padding: 0 5px;
+  font-size: 12px;
+}
+.department-choice > label {
+  font-size: 11px;
+  color: var(--muted);
+}
+.department-form-panel {
+  overflow: visible;
+}
+.department-filter-note {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: var(--muted);
+}
+.department-table td {
+  white-space: nowrap;
+}
+@media (max-width: 1000px) {
+  .department-indicators {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .department-indicators {
+    gap: 12px;
+  }
+  .department-indicators .metric {
+    padding: 16px;
+  }
+  .department-indicators .metric > div {
+    font-size: 11px;
+  }
+  .department-section-links {
+    grid-template-columns: 1fr;
+  }
+  .department-choice {
+    padding: 12px;
+  }
+}

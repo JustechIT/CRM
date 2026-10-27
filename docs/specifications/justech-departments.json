@@ -1,0 +1,102 @@
+{
+  "JM - Overview": [
+    "Active Campaigns",
+    "Scheduled Content",
+    "Awaiting Approval",
+    "Assets in Progress",
+    "Upcoming Campaigns",
+    "Overdue Content"
+  ],
+  "JM - Campaigns": [
+    "Campaign Name",
+    "Platforme",
+    "Start Date",
+    "End Date",
+    "Status",
+    "Assigned To"
+  ],
+  "JM - Content Calendar": [
+    "Content Title",
+    "Platform",
+    "Content Type",
+    "Publish Date",
+    "Status",
+    "Assigned To"
+  ],
+  "JM - Marketing Assets": [
+    "Asset Name",
+    "Asset Type",
+    "Product",
+    "File / Link",
+    "Status",
+    "Assigned To"
+  ],
+  "JO - Overview": [
+    "Total Tasks",
+    "Open Tasks",
+    "Active Projects",
+    "Pending Quality Checks",
+    "Upcoming Follow-ups",
+    "Overdue Follow-ups"
+  ],
+  "JO - Tasks": [
+    "Task",
+    "Project / Area",
+    "Assigned To",
+    "Due Date",
+    "Status"
+  ],
+  "JO - Projects & Delivery": [
+    "Project",
+    "Objective",
+    "Owner",
+    "Deadline",
+    "Status"
+  ],
+  "JO - Quality Control": [
+    "Item to Check",
+    "Project / Area",
+    "Assigned To",
+    "Result",
+    "Status"
+  ],
+  "JO - Follow-up": [
+    "Subject",
+    "Contact / Organization",
+    "Last Contact",
+    "Next Action",
+    "Follow-up Date",
+    "Status"
+  ],
+  "JT - Overview": [
+    "Total Sessions",
+    "Upcoming Sessions",
+    "Completed Sessions",
+    "Total Registrations",
+    "Pending Registrations",
+    "Training History"
+  ],
+  "JT - Training Sessions": [
+    "Session Name",
+    "Product",
+    "Trainer",
+    "Date",
+    "Format",
+    "Status"
+  ],
+  "JT - Registrations": [
+    "Participant Name",
+    "Institution",
+    "Training Session",
+    "Email",
+    "Registration Status"
+  ],
+  "JT - Training History": [
+    "Training Session",
+    "Institution",
+    "Date",
+    "Participants",
+    "Trainer",
+    "Outcome"
+  ]
+}

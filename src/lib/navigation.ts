@@ -42,11 +42,27 @@ export const navigation: { label: string; items: NavItem[] }[] = [
         "Content Calendar",
         "Marketing Assets",
       ]),
-      department("Operations", "justech-operations", "operations", [
-        "Overview",
-        "Requests",
-        "Activities",
-      ]),
+      {
+        label: "Operations",
+        href: "/modules/justech-operations/overview",
+        icon: "operations",
+        children: [
+          { label: "Overview", href: "/modules/justech-operations/overview" },
+          { label: "Tasks", href: "/modules/justech-operations/tasks" },
+          {
+            label: "Projects & Delivery",
+            href: "/modules/justech-operations/projects-delivery",
+          },
+          {
+            label: "Quality Control",
+            href: "/modules/justech-operations/quality-control",
+          },
+          {
+            label: "Follow-ups",
+            href: "/modules/justech-operations/follow-ups",
+          },
+        ],
+      },
       department("Training", "justech-training", "training", [
         "Overview",
         "Training Sessions",
