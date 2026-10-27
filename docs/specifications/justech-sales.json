@@ -1,0 +1,64 @@
+{
+  "JS - Opportunities": [
+    "Opportunities Name",
+    "Organization",
+    "Product",
+    "Date",
+    "Due Date",
+    "Value",
+    "Stage",
+    "Type of Action",
+    "Expected Close",
+    "Note"
+  ],
+  "JS - Quotations": [
+    "LCID",
+    "TYPE",
+    "CLIENT",
+    "NOM",
+    "REF.ENG",
+    "COMPTENO",
+    "CCY",
+    "AMOUNT",
+    "DRAWINGS",
+    "LIABILITY AMOUNT",
+    "TOTAL LC",
+    "TOTAL LIAB",
+    "TOTAL DRAWINGS",
+    "Customer",
+    "Product",
+    "Subscription Period"
+  ],
+  "JS - Turnitin Subscriptions": [
+    "Customer",
+    "Product",
+    "Start Date",
+    "End Date",
+    "Contract Duration",
+    "Status"
+  ],
+  "JS - Other Subscriptions": [
+    "Customer",
+    "Product",
+    "Start Date",
+    "End Date",
+    "Contract Duration",
+    "Status"
+  ],
+  "JS - Renewals": [
+    "Organization",
+    "Product",
+    "Expiry Date",
+    "Renewal Stage",
+    "Next Action",
+    "Follow-up Date"
+  ],
+  "JS - Overview": [
+    "Active Opportunities",
+    "Pending Quotations",
+    "Active Subscriptions",
+    "Upcoming Renewals",
+    "Annual Sales Revenue",
+    "Overdue Follow-ups"
+  ]
+}

@@ -1,6 +1,6 @@
 # Justech CRM
 
-Internal English-language workspace for Justech and Al-Fikr. This first implementation increment includes a responsive application shell, complete proposed navigation, safe setup preview, Supabase employee authentication code, an Accounts & Contacts directory, and a PostgreSQL security foundation. It is not the complete Phase 1 release.
+Internal English-language workspace for Justech and Al-Fikr. This first implementation increment includes a responsive application shell, complete proposed navigation, safe setup preview, Supabase employee authentication code, an Accounts & Contacts directory, a PostgreSQL security foundation, and the Justech Sales module from the consolidated workbook. It is not the complete Phase 1 release.
 
 ## Run locally
 
@@ -18,7 +18,7 @@ The project stores npm's cache in the ignored `.npm-cache` directory so installa
 ## Supabase setup
 
 1. Create a Supabase project. Disable public registration in **Authentication → Providers / Sign In settings**. Configure your application URL and allowed redirect URLs for each deployment.
-2. Apply `supabase/migrations/0001_crm.sql` once to a fresh database using the Supabase SQL editor or your normal CLI migration workflow. Do not run a destructive reset on an existing database.
+2. Apply `supabase/migrations/0001_crm.sql`, then `supabase/migrations/0002_justech_sales.sql`, once in order using the Supabase SQL editor or your normal CLI migration workflow. If the initial migration is already applied, apply only `0002_justech_sales.sql`. Do not run a destructive reset on an existing database.
 3. Copy `.env.example` to `.env.local` and set:
    - `NEXT_PUBLIC_SUPABASE_URL`: project HTTPS URL.
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: project's public publishable key. A public anonymous key also works under this variable name for older projects.
@@ -40,7 +40,7 @@ values ('REPLACE-WITH-AUTH-USER-UUID','management');
 commit;
 ```
 
-Repeat with appropriate roles for additional employees. A user can have multiple role and department rows. Never insert an administrator role based on user-supplied signup metadata. Deactivate a profile by setting `status='inactive'` through a trusted operator; permissions then fail even if an auth session still exists. Profile and role changes have no browser write grants. The future invitation service must validate administrator permissions on the server, keep any admin credential server-only, provide audit records, and use expiring invitation links. In-app invitation acceptance, password setup/recovery and role editing are not implemented yet.
+Repeat with appropriate roles for additional employees. A user can have multiple role and department rows. Never insert an administrator role based on user-supplied signup metadata. Deactivate a profile by setting `status='inactive'` through a trusted operator; permissions then fail even if an auth session still exists. Profile and role changes have no browser write grants. Migration 0002 grants Sales read/write to Administrator, Management and Sales, and Sales deletion only to Administrator; other departments do not automatically receive Sales data access. The future invitation service must validate administrator permissions on the server, keep any admin credential server-only, provide audit records, and use expiring invitation links. In-app invitation acceptance, password setup/recovery and role editing are not implemented yet.
 
 ### Database relationships and permission model
 
@@ -66,17 +66,18 @@ All application tables enable RLS. Anonymous clients have no table access. Activ
 - Employee password login, server-side employee and capability checks, cookie refresh, RLS migration and audit triggers.
 - Global keyboard search (`Ctrl/Cmd+K`), grouped directory results, bounded server queries and explicit unauthorized responses.
 - Read-only employee directory/profile and documented bootstrap architecture.
-- All future department routes show clearly labeled planned modules; import is an explicitly non-operational workflow page.
+- Justech Sales includes Overview, Opportunities, Quotations, Turnitin/Other subscription tabs, Renewals, a shared product catalog, and permission-checked CSV exports. See [Sales documentation](docs/justech-sales.md).
+- Other department routes show clearly labeled planned modules; import is an explicitly non-operational workflow page.
 
 ### Known limits and next work
 
 The browser flows with a real Supabase project have **not been verified** without project configuration. Login/session renewal, REST integration, configured persistence and hosted RLS behavior remain release gates. Local PostgreSQL tests verify the actual migration under simulated Supabase auth claims; they do not prove hosted Supabase Authentication or PostgREST integration.
 
-The full Phase 1 is incomplete. Missing work includes CSV/XLSX parsing/mapping/preview/import/error reporting, user invitations and permission-management UI, password recovery, owner reassignment, account-backed activity feeds/tasks, real dashboard metrics, synced pins, operational notifications, and authenticated browser flow tests. No chart library is loaded because there is no implemented metric series yet. Starter modules and notifications must not be described as operational.
+The full Phase 1 is incomplete. Missing work includes CSV/XLSX parsing/mapping/preview/import/error reporting, user invitations and permission-management UI, password recovery, owner reassignment, account-backed activity feeds/tasks, Home dashboard metrics outside the developed Sales Overview, synced pins, operational notifications, and authenticated browser flow tests. No chart library is loaded because there is no implemented metric series yet. Starter modules and notifications must not be described as operational.
 
 Contact creation currently selects from up to 500 authorized institutions; associated-contact detail lists are capped at 100 and the team directory at 100 profiles. Replace these selectors with server-paginated lookups before using larger datasets. Database search currently uses bounded ILIKE queries; add appropriate trigram indexes after measuring real volume. Account duplicate detection and import staging are still to implement; no account is silently merged. No business data is stored in browser localStorage.
 
-Recommended next task: connect a nonproduction Supabase project, apply the migration, create distinct administrator/sales/read-only/inactive test identities, and automate the authenticated acceptance checks. Then implement safe staged CSV import before importing real customer data.
+Recommended next task: connect a nonproduction Supabase project, apply the migration, create distinct administrator/sales/read-only/inactive test identities, and automate the authenticated acceptance checks. Review Justech Sales with the user before implementing any other department. Import workflows remain a separate task.
 
 ## Validation
 

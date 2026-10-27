@@ -67,7 +67,9 @@ test("department navigation, pinning and responsive menu work", async ({
   await expect(
     page.getByRole("heading", { name: "Renewals", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Planned module")).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Renewals table" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Pin current page" }).click();
   await page.reload();
   await expect(

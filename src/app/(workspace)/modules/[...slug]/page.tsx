@@ -1,12 +1,17 @@
+import { SalesPage } from "@/components/sales/page";
 import { notFound } from "next/navigation";
 import { allPages, navigation } from "@/lib/navigation";
 import { EmptyState, PageHeader, Badge } from "@/components/ui";
 export default async function Module({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string[] }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
+  if (slug[0] === "justech-sales")
+    return <SalesPage slug={slug.slice(1)} params={await searchParams} />;
   const path = "/modules/" + slug.join("/");
   const page = allPages.find((p) => p.href === path);
   if (!page) notFound();
