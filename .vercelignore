@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+.npm-cache
+.vercel
+.env*
+test-results
+playwright-report
