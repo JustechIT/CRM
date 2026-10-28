@@ -1,19 +1,54 @@
 import Link from "next/link";
 import {
-  ArrowRight,
-  ArrowUpRight,
   BriefcaseBusiness,
   FileText,
   CalendarClock,
   ListTodo,
   Plus,
-  Check,
-  Sparkles,
 } from "lucide-react";
 import { EmptyState, PageHeader, SetupNotice } from "@/components/ui";
-import { employee, isConfigured } from "@/lib/supabase";
+import { database, employee, isConfigured } from "@/lib/supabase";
+import { authorized } from "@/lib/directory";
+import { alfikrSections } from "@/lib/alfikr/config";
+import { sections } from "@/lib/departments/config";
+import { workspaceSections } from "@/lib/workspace/config";
+type Home = {
+  opportunities: number | null;
+  caution: number | null;
+  renewals: number | null;
+  tasks: number | null;
+  priorities: { id: string; title: string; due_at: string; priority: string }[];
+  events: { id: string; name: string; event_date: string }[];
+  activity: {
+    id: number;
+    entity: string;
+    action: string;
+    occurred_at: string;
+  }[];
+};
 export default async function Dashboard() {
   const profile = await employee();
+  let data: Home | null = null,
+    failed = false;
+  if (profile) {
+    const db = await database(),
+      r = await db.rpc("home_dashboard");
+    failed = !!r.error;
+    data = r.data as Home | null;
+  }
+  const canAdd = profile && (await authorized("directory.write"));
+  const labels = [
+    ["Active opportunities", "opportunities", BriefcaseBusiness],
+    ["Caution records", "caution", FileText],
+    ["Upcoming renewals", "renewals", CalendarClock],
+    ["Open tasks", "tasks", ListTodo],
+  ] as const;
+  const tableNames = new Map(
+    [...sections, ...workspaceSections, ...alfikrSections].map((s) => [
+      s.table,
+      s.title,
+    ]),
+  );
   return (
     <>
       {!isConfigured() && <SetupNotice />}
@@ -24,11 +59,14 @@ export default async function Dashboard() {
             ? `Hello, ${profile.full_name.split(" ")[0]}.`
             : "A clearer view of your day."
         }
-        description="Your relationships, priorities, and next steps. All in one place."
+        description="Your relationships, priorities and next steps. All in one place."
       >
-        <Link className="button primary" href="/directory/new">
-          <Plus size={16} /> New account
-        </Link>
+        {canAdd && (
+          <Link className="button primary" href="/directory/new">
+            <Plus size={16} />
+            New account
+          </Link>
+        )}
       </PageHeader>
       <div className="welcome-strip">
         <div>
@@ -37,98 +75,129 @@ export default async function Dashboard() {
         </div>
         <span>One team. Connected work.</span>
       </div>
+      {failed && (
+        <p className="form-error">
+          Dashboard data could not be loaded. Check your connection and the
+          latest database migrations.
+        </p>
+      )}
       <div className="metrics">
-        {[
-          ["Active opportunities", BriefcaseBusiness],
-          ["Caution records", FileText],
-          ["Upcoming renewals", CalendarClock],
-          ["Open tasks", ListTodo],
-        ].map(([label, Icon]) => {
-          const I = Icon as typeof ListTodo;
-          return (
-            <div className="metric" key={String(label)}>
-              <div>
-                <span>{String(label)}</span>
-                <I size={18} />
-              </div>
-              <strong>—</strong>
-              <small>Available when this module is connected</small>
+        {labels.map(([label, key, Icon]) => (
+          <div className="metric" key={key}>
+            <div>
+              <span>{label}</span>
+              <Icon size={18} />
             </div>
-          );
-        })}
+            <strong>{data?.[key] ?? "—"}</strong>
+            <small>
+              {data?.[key] == null
+                ? "Connect your account or request module access"
+                : "Calculated from your accessible records"}
+            </small>
+          </div>
+        ))}
       </div>
       <div className="dashboard-grid">
         <section className="panel priorities">
           <div className="panel-heading">
+            <h2>My priorities</h2>
+            <ListTodo size={18} />
+          </div>
+          {data?.priorities?.length ? (
             <div>
-              <span className="eyebrow">Focus on what matters</span>
-              <h2>My priorities</h2>
+              {data.priorities.map((p) => (
+                <Link
+                  key={p.id}
+                  className="onboarding-row"
+                  href={`/modules/workspace/priorities?record=${p.id}`}
+                >
+                  <strong>{p.title}</strong>
+                  <small>
+                    {p.priority} · {p.due_at.slice(0, 10)}
+                  </small>
+                </Link>
+              ))}
             </div>
-            <span className="subtle-icon">
-              <ListTodo size={18} />
-            </span>
-          </div>
-          <EmptyState
-            title="Room for your next great day"
-            description="Your assigned tasks will appear here when Team Priorities is available."
-            action={
-              <Link className="button" href="/modules/workspace/priorities">
-                Explore team priorities <ArrowRight size={15} />
-              </Link>
-            }
-          />
-          <div className="panel-foot">
-            <Check size={15} /> A shared view of work, with a personal focus.
-          </div>
+          ) : (
+            <EmptyState
+              title="No open priorities to show"
+              description={
+                profile
+                  ? "Your assigned open priorities appear here when you have access."
+                  : "Sign in to see your own work."
+              }
+            />
+          )}
+          <Link className="button" href="/modules/workspace/priorities?mine=1">
+            Open My Priorities
+          </Link>
         </section>
         <section className="panel">
           <div className="panel-heading">
             <h2>Upcoming activities</h2>
             <CalendarClock size={18} />
           </div>
-          <EmptyState
-            title="A little breathing room"
-            description="Scheduled activities will appear here once the activities module is connected."
-          />
+          {data?.events?.length ? (
+            data.events.map((e) => (
+              <Link
+                key={e.id}
+                className="onboarding-row"
+                href={`/modules/workspace/events?record=${e.id}`}
+              >
+                <strong>{e.name}</strong>
+                <small>{e.event_date}</small>
+              </Link>
+            ))
+          ) : (
+            <EmptyState
+              title="No upcoming events to show"
+              description="Accessible events in the next 30 days appear here."
+            />
+          )}
         </section>
         <section className="panel">
           <div className="panel-heading">
             <h2>Recent CRM activity</h2>
-            <span className="badge">Coming next</span>
           </div>
-          <EmptyState
-            title="Your workspace story starts here"
-            description="A shared activity feed will make relationship updates easy to follow."
-          />
+          {data?.activity?.length ? (
+            <ul>
+              {data.activity.map((a) => (
+                <li key={a.id}>
+                  {tableNames.get(a.entity) ??
+                    (a.entity === "accounts"
+                      ? "Accounts"
+                      : a.entity === "contacts"
+                        ? "Contacts"
+                        : "Workspace record")}{" "}
+                  —{" "}
+                  {a.action === "INSERT"
+                    ? "created"
+                    : a.action === "DELETE"
+                      ? "deleted"
+                      : "updated"}{" "}
+                  <small className="muted">{a.occurred_at.slice(0, 10)}</small>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              title="No recent activity available"
+              description="Activity shown here respects your audit permissions."
+            />
+          )}
         </section>
         <section className="panel getting-started">
-          <div className="panel-heading">
-            <h2>Make yourself at home</h2>
-            <Sparkles size={18} />
-          </div>
-          <p className="muted">A few useful places to get started.</p>
-          {[
-            [
-              "Build your directory",
-              "Keep institutions and people connected.",
-              "/directory",
-            ],
-            ["Meet your team", "A shared home for your colleagues.", "/team"],
-            [
-              "Set up your workspace",
-              "Connect the services behind your CRM.",
-              "/settings",
-            ],
-          ].map(([title, description, href], index) => (
-            <Link className="onboarding-row" key={href} href={href}>
-              <span className="step-number">0{index + 1}</span>
-              <span>
-                <strong>{title}</strong>
-                <small>{description}</small>
-              </span>
-              <ArrowUpRight size={17} />
-            </Link>
-          ))}
+          <h2>Make yourself at home</h2>
+          <p className="muted">Useful settings and shortcuts.</p>
+          <Link className="onboarding-row" href="/settings">
+            Workspace settings
+          </Link>
+          <Link className="onboarding-row" href="/profile">
+            My Profile
+          </Link>
+          <Link className="onboarding-row" href="/directory/import">
+            Import accounts & contacts
+          </Link>
         </section>
       </div>
       <div className="workspace-footer">

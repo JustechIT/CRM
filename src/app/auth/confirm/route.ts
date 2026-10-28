@@ -1,15 +1,18 @@
+import { publicOrigin } from "@/lib/server/request";
 import { NextRequest, NextResponse } from "next/server";
 import { database, isConfigured } from "@/lib/supabase";
 export async function GET(request: NextRequest) {
   if (!isConfigured())
-    return NextResponse.redirect(new URL("/login?error=setup", request.url));
+    return NextResponse.redirect(
+      new URL("/login?error=setup", publicOrigin(request)),
+    );
   const db = await database();
   const p = request.nextUrl.searchParams;
   const code = p.get("code"),
     hash = p.get("token_hash");
   let ok = false;
   if (!code && !hash)
-    return NextResponse.redirect(new URL("/invite", request.url));
+    return NextResponse.redirect(new URL("/invite", publicOrigin(request)));
   if (code) {
     const r = await db.auth.exchangeCodeForSession(code);
     ok = !r.error;
@@ -24,6 +27,6 @@ export async function GET(request: NextRequest) {
     ok = !r.error;
   }
   return NextResponse.redirect(
-    new URL(ok ? "/invite" : "/invite?error=link", request.url),
+    new URL(ok ? "/invite" : "/invite?error=link", publicOrigin(request)),
   );
 }

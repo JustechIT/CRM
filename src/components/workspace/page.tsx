@@ -3,7 +3,13 @@ import { notFound, unstable_rethrow } from "next/navigation";
 import { authorized } from "@/lib/directory";
 import { isConfigured } from "@/lib/supabase";
 import { PageHeader, EmptyState, SetupNotice } from "@/components/ui";
-import { getSection, modulePath, param, value } from "@/lib/departments/config";
+import {
+  getSection,
+  modulePath,
+  param,
+  value,
+  recordLabel,
+} from "@/lib/departments/config";
 import type { ModuleScope, Params, RecordRow } from "@/lib/departments/types";
 import { list, record as loadRecord } from "@/lib/departments/data";
 import { id as uuid } from "@/lib/departments/validation";
@@ -76,14 +82,14 @@ async function Contents({
     <>
       {!configured && <SetupNotice />}
       <PageHeader
-        eyebrow="Workspace"
+        eyebrow={scope.startsWith("alfikr-") ? "Al-Fikr" : "Workspace"}
         title={
           creating
             ? `New ${section.singular}`
             : editing
               ? `Edit ${section.singular}`
               : row
-                ? value(row, section.fields[0].key)
+                ? recordLabel(section, row) || section.singular
                 : section.title
         }
         description={

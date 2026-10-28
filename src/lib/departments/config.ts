@@ -1,3 +1,4 @@
+import { alfikrSections, isAlFikr } from "@/lib/alfikr/config";
 import { workspaceSections, isWorkspaceScope } from "@/lib/workspace/config";
 import type {
   ModuleScope,
@@ -33,10 +34,10 @@ export function isDepartment(value: unknown): value is Department {
   return departments.includes(value as Department);
 }
 export function isModuleScope(v: unknown): v is ModuleScope {
-  return isDepartment(v) || isWorkspaceScope(v);
+  return isDepartment(v) || isWorkspaceScope(v) || isAlFikr(v);
 }
 export function getSection(department: ModuleScope, slug: string) {
-  return [...sections, ...workspaceSections].find(
+  return [...sections, ...workspaceSections, ...alfikrSections].find(
     (s) => s.department === department && s.slug === slug,
   );
 }
@@ -46,6 +47,8 @@ export function modulePath(
   params: Record<string, string> = {},
 ) {
   const query = new URLSearchParams(params);
+  if (isAlFikr(department))
+    return `/modules/${department}/${slug}${query.size ? "?" + query : ""}`;
   if (isWorkspaceScope(department)) {
     if (department === "events") {
       if (slug === "conferences") query.set("section", "conferences");

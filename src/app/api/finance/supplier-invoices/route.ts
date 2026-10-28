@@ -1,3 +1,4 @@
+import { requestHasSameOrigin } from "@/lib/server/request";
 import { NextRequest, NextResponse } from "next/server";
 import { invoiceAccess } from "@/lib/finance/access";
 import { invoiceSchema } from "@/lib/finance/config";
@@ -7,7 +8,7 @@ export function reply(data: unknown, status = 200) {
   return NextResponse.json(data, { status, headers });
 }
 export function sameOrigin(request: NextRequest) {
-  return request.headers.get("origin") === request.nextUrl.origin;
+  return requestHasSameOrigin(request);
 }
 export async function GET(request: NextRequest) {
   const access = await invoiceAccess();

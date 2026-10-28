@@ -23,9 +23,15 @@ export async function proxy(request: NextRequest) {
           /^\/modules\/workspace\/(priorities|platform|events)(?:\/|$)/,
         )?.[1]
       : undefined;
+  const alfikrMutation =
+    request.method === "POST"
+      ? request.nextUrl.pathname.match(
+          /^\/modules\/(alfikr-sales|alfikr-marketing|alfikr-content)(?:\/|$)/,
+        )?.[1]
+      : undefined;
   const mutationScope = salesMutation
     ? "sales"
-    : (departmentMutation ?? workspaceMutation);
+    : (departmentMutation ?? workspaceMutation ?? alfikrMutation);
   const scopeLabel = salesMutation ? "Sales" : "Department";
   function deny(status: number, message: string) {
     const denied = NextResponse.json(

@@ -8,16 +8,16 @@ test("safe preview has no fabricated metrics and blocks record creation", async 
     page.getByRole("heading", { name: "A clearer view of your day." }),
   ).toBeVisible();
   await expect(
-    page.getByText("Available when this module is connected"),
+    page.getByText("Connect your account or request module access"),
   ).toHaveCount(4);
-  await page.getByRole("link", { name: "New account", exact: true }).click();
+  await page.goto("/directory/new");
   await expect(
     page.getByRole("heading", { name: "Employee access required" }),
   ).toBeVisible();
   const res = await page.request.get("/api/search?q=test");
   expect(res.status()).toBe(401);
 });
-test("directory filters and planned import are honest", async ({ page }) => {
+test("directory filters and safe import preview work", async ({ page }) => {
   await page.goto("/directory");
   await page
     .getByRole("textbox", { name: "Search accounts" })
@@ -30,10 +30,8 @@ test("directory filters and planned import are honest", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("link", { name: "Import", exact: true }).click();
   await expect(
-    page.getByText("Import is not operational in this increment.", {
-      exact: false,
-    }),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Read file", exact: true }),
+  ).toBeDisabled();
 });
 test("global search supports keyboard access and escape", async ({ page }) => {
   await page.goto("/");

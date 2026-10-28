@@ -214,14 +214,14 @@ test("Each department rejects unauthorized lookups and forged POSTs while stayin
     ).toBe(200);
   }
 });
-test("Al-Fikr sections remain untouched starter pages", async ({ page }) => {
+test("Al-Fikr overviews are now operational", async ({ page }) => {
   for (const path of [
     "/modules/alfikr-sales/overview",
     "/modules/alfikr-marketing/overview",
   ]) {
     await page.goto(path);
-    await expect(
-      page.getByText("Planned module", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Planned module", { exact: true })).toHaveCount(
+      0,
+    );
   }
 });

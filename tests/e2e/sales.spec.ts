@@ -170,7 +170,7 @@ test("Sales APIs and forged form submissions are rejected without employee acces
   const healthy = await page.request.get(`${base}/overview`);
   expect(healthy.status()).toBe(200);
 });
-test("shared product management is inside Sales and other modules stay unchanged", async ({
+test("shared product management stays inside Sales and Al-Fikr is implemented", async ({
   page,
 }) => {
   await page.goto(`${base}/subscriptions?catalog=1`);
@@ -181,5 +181,7 @@ test("shared product management is inside Sales and other modules stay unchanged
     page.getByRole("button", { name: "Add product", exact: true }),
   ).toBeDisabled();
   await page.goto("/modules/alfikr-marketing/overview");
-  await expect(page.getByText("Planned module", { exact: true })).toBeVisible();
+  await expect(page.getByText("Planned module", { exact: true })).toHaveCount(
+    0,
+  );
 });

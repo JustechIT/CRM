@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
     priorities: ["employees", "departments"],
     platform: ["employees", "itprojects"],
     events: ["employees", "accounts", "contacts"],
+    "alfikr-sales": ["employees", "accounts", "products"],
+    "alfikr-marketing": ["employees"],
+    "alfikr-content": ["employees", "catalog"],
     marketing: ["employees", "products"],
     operations: ["employees", "projects", "accounts", "contacts", "products"],
     training: ["employees", "products", "accounts", "sessions"],
@@ -26,6 +29,7 @@ export async function GET(request: NextRequest) {
   const mapping: Record<string, { table: string; column: string }> = {
     departments: { table: "departments", column: "name" },
     itprojects: { table: "it_projects", column: "name" },
+    catalog: { table: "alfikr_content_content_catalog", column: "title" },
     employees: { table: "employee_profiles", column: "full_name" },
     products: { table: "products", column: "name" },
     accounts: { table: "accounts", column: "name" },
@@ -41,6 +45,11 @@ export async function GET(request: NextRequest) {
   const search = (params.get("q") ?? "").trim().slice(0, 100);
   let q = access.db.from(table).select(`id,name:${column}`);
   if (search) q = q.ilike(column, `%${search.replace(/[\\%_]/g, "\\$&")}%`);
+  if (
+    dept === "alfikr-sales" &&
+    (entity === "products" || entity === "accounts")
+  )
+    q = q.in("business", ["Al-Fikr", "Both"]);
   if (entity === "employees") q = q.eq("status", "active");
   if (entity === "sessions")
     q =

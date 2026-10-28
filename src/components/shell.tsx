@@ -21,7 +21,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Search,
-  Bell,
   X,
   Menu,
   Pin,
@@ -40,6 +39,7 @@ import {
   activeDepartment,
   isPageAllowed,
 } from "@/lib/navigation";
+import { Notifications } from "@/components/notifications";
 import { signOut } from "@/app/login/actions";
 const icons: Record<string, LucideIcon> = {
   home: Home,
@@ -64,7 +64,7 @@ const subscribe = (callback: () => void) => {
     window.removeEventListener("preferences", callback);
   };
 };
-function usePreference(key: string, initial: string) {
+function usePreference(key: string, initial: string, persist = false) {
   const value = useSyncExternalStore(
     subscribe,
     () => {
@@ -82,6 +82,19 @@ function usePreference(key: string, initial: string) {
       try {
         localStorage.setItem(key, next);
         window.dispatchEvent(new Event("preferences"));
+        if (persist) {
+          const data =
+            key === "justech.theme"
+              ? { theme: next }
+              : key === "justech.sidebar"
+                ? { sidebar_collapsed: next === "collapsed" }
+                : { pinned_pages: JSON.parse(next) };
+          void fetch("/api/preferences", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          }).catch(() => {});
+        }
       } catch {
         /* Preferences remain optional. */
       }
@@ -118,9 +131,10 @@ export function Shell({
   const [collapsed, setCollapsed] = usePreference(
     "justech.sidebar",
     "expanded",
+    !preview,
   );
-  const [pinsValue, setPins] = usePreference("justech.pins", "[]");
-  const [theme, setTheme] = usePreference("justech.theme", "light");
+  const [pinsValue, setPins] = usePreference("justech.pins", "[]", !preview);
+  const [theme, setTheme] = usePreference("justech.theme", "light", !preview);
   let pins: string[] = [];
   try {
     const raw: unknown = JSON.parse(pinsValue);
@@ -133,7 +147,6 @@ export function Shell({
   const [expanded, setExpanded] = useState<string | null>(null);
   const [mobile, setMobile] = useState(false);
   const [search, setSearch] = useState(false);
-  const [notifications, setNotifications] = useState(false);
   const [profile, setProfile] = useState(false);
   const department = expanded ?? activeDepartment(pathname);
   const isCollapsed = collapsed === "collapsed";
@@ -142,6 +155,62 @@ export function Shell({
     { id: string; label: string; type: string }[]
   >([]);
   const [searchState, setSearchState] = useState("");
+  useEffect(() => {
+    if (preview) return;
+    const abort = new AbortController();
+    fetch("/api/preferences", { signal: abort.signal })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.preferences) {
+          try {
+            if (!d.exists) {
+              const t = localStorage.getItem("justech.theme");
+              let pins: unknown = [];
+              try {
+                pins = JSON.parse(localStorage.getItem("justech.pins") ?? "[]");
+              } catch {}
+              d.preferences = {
+                ...d.preferences,
+                theme:
+                  t === "dark"
+                    ? "dark"
+                    : t === "light"
+                      ? "light"
+                      : d.preferences.theme,
+                sidebar_collapsed:
+                  localStorage.getItem("justech.sidebar") === "collapsed",
+                pinned_pages: Array.isArray(pins)
+                  ? pins
+                      .filter(
+                        (p: unknown) =>
+                          typeof p === "string" &&
+                          allPages.some((page) => page.href === p),
+                      )
+                      .slice(0, 100)
+                  : [],
+              };
+              void fetch("/api/preferences", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(d.preferences),
+              }).catch(() => {});
+            }
+            localStorage.setItem("justech.theme", d.preferences.theme);
+            localStorage.setItem(
+              "justech.sidebar",
+              d.preferences.sidebar_collapsed ? "collapsed" : "expanded",
+            );
+            localStorage.setItem(
+              "justech.pins",
+              JSON.stringify(d.preferences.pinned_pages),
+            );
+            window.dispatchEvent(new Event("preferences"));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+    return () => abort.abort();
+  }, [preview]);
   const dialog = useRef<HTMLDialogElement>(null);
   const mobileDialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -199,7 +268,6 @@ export function Shell({
     setMobile(false);
     setExpanded(null);
     setProfile(false);
-    setNotifications(false);
   }
   function togglePin() {
     setPins(
@@ -431,34 +499,7 @@ export function Shell({
             >
               {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <div className="popover-anchor">
-              <button
-                className="icon-button"
-                aria-label="Notifications"
-                aria-expanded={notifications}
-                onClick={() => {
-                  setNotifications(!notifications);
-                  setProfile(false);
-                }}
-              >
-                <Bell size={19} />
-              </button>
-              {notifications && (
-                <div className="popover">
-                  <strong>You’re all caught up</strong>
-                  <p>
-                    Notifications will appear here when connected modules
-                    publish updates.
-                  </p>
-                  <button
-                    className="text-link"
-                    onClick={() => setNotifications(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-              )}
-            </div>
+            <Notifications preview={preview} />
             <div className="header-divider" />
             <div className="popover-anchor">
               <button
@@ -467,7 +508,6 @@ export function Shell({
                 aria-label="Open profile menu"
                 onClick={() => {
                   setProfile(!profile);
-                  setNotifications(false);
                 }}
               >
                 <span className="avatar">

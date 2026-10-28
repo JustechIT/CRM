@@ -31,9 +31,15 @@ export function validate(section: Section, input: unknown) {
     else if (f.type === "integer")
       schema = z
         .string()
-        .regex(/^\d+$/, "Enter a whole number of participants.")
+        .regex(/^\d+$/, "Enter a whole number.")
         .transform(Number)
-        .pipe(z.number().int().min(0).max(2147483647));
+        .pipe(
+          z
+            .number()
+            .int()
+            .min(f.key === "publication_year" ? 1 : 0)
+            .max(f.key === "publication_year" ? 9999 : 2147483647),
+        );
     else if (f.type === "select")
       schema = z.enum(f.options as [string, ...string[]]);
     else if (f.type === "email")
@@ -69,9 +75,48 @@ export function validate(section: Section, input: unknown) {
     shape.party_id = id;
   }
   if (section.slug === "issues") shape.project_id = id;
+  for (const f of [...section.fields, ...(section.extraFields ?? [])])
+    if (f.key === "currency")
+      shape.currency = f.required
+        ? z
+            .string()
+            .trim()
+            .toUpperCase()
+            .regex(/^[A-Z]{3}$/)
+        : z
+            .string()
+            .trim()
+            .toUpperCase()
+            .regex(/^$|^[A-Z]{3}$/)
+            .default("");
   return z
     .object(shape)
     .superRefine((v, ctx) => {
+      if (section.department.startsWith("alfikr-")) {
+        for (const [start, end] of [
+          ["start_date", "end_date"],
+          ["issue_date", "valid_until"],
+          ["date_received", "due_date"],
+          ["date", "due_date"],
+          ["date", "expected_close"],
+        ])
+          if (v[start] && v[end] && String(v[end]) < String(v[start]))
+            ctx.addIssue({
+              code: "custom",
+              path: [end],
+              message: "End/due date cannot precede the starting date.",
+            });
+        if (
+          section.slug === "subscriptions" &&
+          v.annual_value != null &&
+          !v.currency
+        )
+          ctx.addIssue({
+            code: "custom",
+            path: ["currency"],
+            message: "Choose a currency for Annual Value.",
+          });
+      }
       if (
         section.table === "it_projects" &&
         String(v.deadline) < String(v.start_date)

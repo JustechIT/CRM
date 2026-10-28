@@ -1,5 +1,7 @@
 import { authorized } from "@/lib/directory";
 import { isConfigured } from "@/lib/supabase";
+import { AlFikrPage } from "@/components/alfikr/page";
+import { isAlFikr } from "@/lib/alfikr/config";
 import { WorkspacePage } from "@/components/workspace/page";
 import { DepartmentPage } from "@/components/departments/page";
 import { isDepartment } from "@/lib/departments/config";
@@ -15,6 +17,12 @@ export default async function Module({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
+  if (isAlFikr(slug[0])) {
+    if (slug.length !== 2) notFound();
+    return (
+      <AlFikrPage scope={slug[0]} slug={slug[1]} params={await searchParams} />
+    );
+  }
   if (
     slug[0] === "workspace" &&
     ["priorities", "platform", "events"].includes(slug[1]) &&

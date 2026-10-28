@@ -1,10 +1,12 @@
+import { requestHasSameOrigin, publicOrigin } from "@/lib/server/request";
 import { NextRequest, NextResponse } from "next/server";
 import { superAdmin } from "@/lib/team/access";
 import { authAdministrator } from "@/lib/team/admin-client";
 import { userSchema } from "@/lib/team/config";
+import { deliverInvitation } from "@/lib/team/delivery";
 import { idSchema } from "@/lib/sales/validation";
 export async function POST(request: NextRequest) {
-  if (request.headers.get("origin") !== request.nextUrl.origin)
+  if (!requestHasSameOrigin(request))
     return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
   const access = await superAdmin();
   if (!access)
@@ -44,41 +46,57 @@ export async function POST(request: NextRequest) {
       },
       { status: 400 },
     );
-  const sent = await admin.auth.admin.inviteUserByEmail(parsed.data.email!, {
-    redirectTo: `${request.nextUrl.origin}/auth/confirm`,
+  const delivery = await deliverInvitation({
+    invite: async () => {
+      const r = await admin.auth.admin.inviteUserByEmail(parsed.data.email!, {
+        redirectTo: `${publicOrigin(request)}/auth/confirm`,
+      });
+      return r.error;
+    },
+    recover: async () => {
+      const r = await admin.auth.resetPasswordForEmail(parsed.data.email!, {
+        redirectTo: `${publicOrigin(request)}/auth/confirm`,
+      });
+      return r.error;
+    },
+    record: async (sent, code) => {
+      const r = await access.db.rpc("record_invitation_delivery", {
+        invitation: reservation.data,
+        sent,
+        error_code: code,
+      });
+      if (r.error) {
+        if (!sent)
+          await access.db.rpc("team_cancel_invitation", {
+            invitation: reservation.data,
+          });
+        throw Error("Delivery tracking unavailable.");
+      }
+    },
   });
-  if (
-    sent.error &&
-    ["email_exists", "user_already_exists"].includes(sent.error.code ?? "")
-  ) {
-    const resend = await admin.auth.resetPasswordForEmail(parsed.data.email!, {
-      redirectTo: `${request.nextUrl.origin}/auth/confirm`,
-    });
-    if (!resend.error)
-      return NextResponse.json(
-        { sent: true },
-        { headers: { "Cache-Control": "private, no-store" } },
-      );
-  }
-  if (sent.error) {
-    await access.db.rpc("team_cancel_invitation", {
-      invitation: reservation.data,
-    });
+  if (!delivery.sent)
     return NextResponse.json(
       {
         error:
-          "The invitation could not be sent. Check Supabase email delivery and redirect URLs. No employee permissions were granted.",
+          "The invitation could not be sent. Check Supabase email delivery and redirect settings.",
       },
       { status: 503 },
     );
-  }
   return NextResponse.json(
-    { sent: true },
+    {
+      sent: true,
+      ...(!delivery.tracked
+        ? {
+            warning:
+              "The email service accepted the invitation, but delivery tracking is unavailable.",
+          }
+        : {}),
+    },
     { headers: { "Cache-Control": "private, no-store" } },
   );
 }
 export async function DELETE(request: NextRequest) {
-  if (request.headers.get("origin") !== request.nextUrl.origin)
+  if (!requestHasSameOrigin(request))
     return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
   const a = await superAdmin();
   if (!a)

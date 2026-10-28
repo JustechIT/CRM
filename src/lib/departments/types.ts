@@ -1,5 +1,12 @@
 export type Department = "marketing" | "operations" | "training";
-export type ModuleScope = Department | "priorities" | "platform" | "events";
+export type ModuleScope =
+  | Department
+  | "priorities"
+  | "platform"
+  | "events"
+  | "alfikr-sales"
+  | "alfikr-marketing"
+  | "alfikr-content";
 export type Reference =
   | "employees"
   | "products"
@@ -8,7 +15,8 @@ export type Reference =
   | "projects"
   | "sessions"
   | "departments"
-  | "itprojects";
+  | "itprojects"
+  | "catalog";
 export type Field = {
   key: string;
   label: string;

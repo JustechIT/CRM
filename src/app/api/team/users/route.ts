@@ -1,8 +1,9 @@
+import { requestHasSameOrigin } from "@/lib/server/request";
 import { NextRequest, NextResponse } from "next/server";
 import { superAdmin } from "@/lib/team/access";
 import { userSchema } from "@/lib/team/config";
 export async function PATCH(request: NextRequest) {
-  if (request.headers.get("origin") !== request.nextUrl.origin)
+  if (!requestHasSameOrigin(request))
     return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
   const access = await superAdmin();
   if (!access)

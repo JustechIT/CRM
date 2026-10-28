@@ -18,11 +18,11 @@ The project stores npm's cache in the ignored `.npm-cache` directory so installa
 ## Supabase setup
 
 1. Create a Supabase project. Disable public registration in **Authentication → Providers / Sign In settings**. Configure your application URL and allowed redirect URLs for each deployment.
-2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0010). For an existing installation with 0001–0005 applied, apply 0006–0010 in order. If only 0001/0002 are applied, continue from 0003 through 0010. Supplier Invoice access is granted separately using the explicitly approved-account script in the update guide. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
+2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0013). For an existing installation with 0001–0005 applied, apply 0006–0013 in order. If only 0001/0002 are applied, continue from 0003 through 0013. Supplier Invoice access is granted separately using the explicitly approved-account script in the update guide. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
 3. Copy `.env.example` to `.env.local` and set:
    - `NEXT_PUBLIC_SUPABASE_URL`: project HTTPS URL.
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: project's public publishable key. A public anonymous key also works under this variable name for older projects.
-4. Never put a service-role/secret key in these variables. No service-role key is needed by this app. Public keys are intentionally browser-safe; actual access is enforced by authenticated employee checks and RLS.
+4. Never put a service-role/secret key in these variables. Ordinary CRM features use the public key and authenticated RLS. Invitation delivery additionally requires `SUPABASE_SECRET_KEY`, kept server-only; never prefix it with `NEXT_PUBLIC_`.
 5. Bootstrap your administrator as described below, restart Next.js, and log in.
 
 ### Initial administrator bootstrap
@@ -40,7 +40,7 @@ values ('REPLACE-WITH-AUTH-USER-UUID','management');
 commit;
 ```
 
-Repeat with appropriate roles for additional employees. A user can have multiple role and department rows. Never insert an administrator role based on user-supplied signup metadata. Deactivate a profile by setting `status='inactive'` through a trusted operator; permissions then fail even if an auth session still exists. Profile and role changes have no browser write grants. Migration 0002 grants Sales read/write to Administrator, Management and Sales, and Sales deletion only to Administrator; other departments do not automatically receive Sales data access. The future invitation service must validate administrator permissions on the server, keep any admin credential server-only, provide audit records, and use expiring invitation links. In-app invitation acceptance, password setup/recovery and role editing are not implemented yet.
+Repeat with appropriate roles for additional employees. A user can have multiple role and department rows. Never insert an administrator role based on user-supplied signup metadata. Deactivate a profile by setting `status='inactive'` through a trusted operator; permissions then fail even if an auth session still exists. Profile and role changes have no browser write grants. Migration 0002 grants Sales read/write to Administrator, Management and Sales, and Sales deletion only to Administrator; other departments do not automatically receive Sales data access. The implemented invitation service validates the verified Super Admin on the server, keeps its credential server-only, records delivery outcomes and uses expiring, recipient-bound invitation links. Team Management supports permission and role editing. General password-recovery UI remains future work.
 
 ### Database relationships and permission model
 
@@ -49,8 +49,8 @@ Repeat with appropriate roles for additional employees. A user can have multiple
 - `user_departments` provides independent many-to-many department membership; department membership alone does not grant access.
 - `accounts` owns institution context and references an employee owner.
 - `contacts` references an account and employee owner; account deletion is restricted while contacts exist. Non-empty contact emails are unique within each account, case-insensitively.
-- `user_preferences` is employee-scoped, prepared for future synced preferences. Current pin/sidebar/theme preferences are device-local and contain no business data.
-- `activities` reserves account/contact relationships; access is closed until its workflow is implemented.
+- `user_preferences` synchronizes each employee’s theme, sidebar, pins and in-app notification preference. Browser preferences contain no business data.
+- `activities` retains account/contact relationships and supports scoped Operations tasks and Workspace priorities.
 - `audit_records` stores actor, entity, record identifier, action and time for directory writes without copying personal record contents. Application users cannot modify audit entries.
 
 All application tables enable RLS. Anonymous clients have no table access. Active employees with `directory.read` can see the shared directory across business areas; this is an explicit Phase 1 shared-directory policy, not account-level isolation. Sales, Operations and Management have directory write access; Administrators additionally have delete access. Marketing, Training and IT are read-only by default. Owners are assigned to the current employee on creation; owner/timestamp/id reassignment is excluded by column grants. Extra roles and permissions can be added with migrations. A future customer portal requires separate tenant isolation and policies before any external access is enabled.
@@ -60,7 +60,7 @@ All application tables enable RLS. Anonymous clients have no table access. Activ
 - Responsive sidebar with all proposed sections/submenus, single expanded department, desktop collapse, mobile modal navigation, current-page indicators and pinned routes.
 - Reusable page headers, notices, badges, empty/error/loading states, forms, tables and confirmation patterns.
 - Light/dark tokens; provisional green/neutral palette, with no claim to official brand colors. No external font requests are needed.
-- Empty dashboard with honest unavailable metrics and links to useful next steps; no fabricated revenue/customer numbers.
+- Permission-aware Home counts, assigned priorities, upcoming events and recent accessible activity; no fabricated revenue/customer numbers.
 - Server-rendered account/contact lists with bounded search, filters, ordering and 20-row pagination.
 - Server-validated create/edit/delete actions, detail pages, account/contact links, Zod validation and deletion confirmation.
 - Employee password login, server-side employee and capability checks, cookie refresh, RLS migration and audit triggers.
@@ -68,17 +68,17 @@ All application tables enable RLS. Anonymous clients have no table access. Activ
 - Verified Team Management with invitations, role/module permissions, account activation/removal and a protected designated Super Admin; employee profiles remain protected from ordinary browser writes.
 - Justech Sales includes Overview, Opportunities, Subscriptions / Renewals, Payments, a shared product catalog and permission-checked CSV exports. Former quotations are retained as Operations → Caution. See [the Sales/Finance update](docs/sales-finance-update.md).
 - Justech Marketing, Operations and Training provide workbook-matched tables, CRUD, linked references, filtering and real Overview counts. See [department documentation](docs/justech-departments.md).
-- Workspace includes Team Priorities, project-based IT tasks/issues and separate Conferences/Events tables. Al-Fikr routes remain planned modules; import is an explicitly non-operational workflow page.
+- Workspace includes Team Priorities, project-based IT tasks/issues and separate Conferences/Events tables. Al-Fikr and directory imports are implemented; see the finishing update guide.
 
 ### Known limits and next work
 
 The browser flows with a real Supabase project have **not been verified** without project configuration. Login/session renewal, REST integration, configured persistence and hosted RLS behavior remain release gates. Local PostgreSQL tests verify the actual migration under simulated Supabase auth claims; they do not prove hosted Supabase Authentication or PostgREST integration.
 
-The full Phase 1 is incomplete. Missing work includes CSV/XLSX parsing/mapping/preview/import/error reporting, general password-recovery UI, owner reassignment, Workspace activity feeds, Home dashboard metrics outside the developed department Overviews, synced pins, operational notifications, and authenticated browser flow tests. No chart library is loaded because there is no implemented metric series yet. Starter modules and notifications must not be described as operational.
+The full Phase 1 is incomplete. Remaining integration work includes hosted authenticated acceptance tests and actual email/Storage service round trips. General password-recovery UI and broader owner-reassignment workflows are separate future features. No chart library is loaded because there is no implemented metric series yet. In-app notifications now use real accessible assigned work; email notifications are not implemented.
 
-Contact creation currently selects from up to 500 authorized institutions; associated-contact detail lists are capped at 100. Replace these selectors with server-paginated lookups before using larger datasets. Database search currently uses bounded ILIKE queries; add appropriate trigram indexes after measuring real volume. Account duplicate detection and import staging are still to implement; no account is silently merged. No business data is stored in browser localStorage.
+Contact creation currently selects from up to 500 authorized institutions; associated-contact detail lists are capped at 100. Replace these selectors with server-paginated lookups before using larger datasets. Database search currently uses bounded ILIKE queries; add appropriate trigram indexes after measuring real volume. Directory import detects exact normalized duplicates and skips them without silently merging accounts. No business data is stored in browser localStorage.
 
-Recommended next task: connect a nonproduction Supabase project, apply the migration, create distinct administrator/sales/read-only/inactive test identities, and automate the authenticated acceptance checks. Review the implemented Justech modules with the user before expanding into Al-Fikr. Import workflows remain a separate task.
+Recommended next task: connect a nonproduction Supabase project, apply the migration, create distinct administrator/sales/read-only/inactive test identities, and automate the authenticated acceptance checks. Include Al-Fikr, directory imports, Settings, My Profile and invitation delivery in those connected-project checks.
 
 ## Validation
 
@@ -123,7 +123,7 @@ Deploy to Vercel as a Next.js application with Node.js 24 and the two documented
 
 ## Code map
 
-- `src/app/(workspace)`: protected server layout, dashboard, directory, profile/team/settings and planned modules.
+- `src/app/(workspace)`: protected server layout, dashboard, directory, profile/team/settings and business modules.
 - `src/components`: shell, reusable UI, login and record forms.
 - `src/lib`: navigation, validation, server-only Supabase/data/authorization helpers.
 - `src/proxy.ts`: server auth-cookie refresh.
@@ -137,3 +137,7 @@ See [the Windows update and database guide](docs/sales-finance-update.md) for mi
 ## Workspace and verified Team Management
 
 See [the Workspace/Team update guide](docs/workspace-team-update.md) for migrations 0009–0010, verified activation for the confirmed souhail@justech.tn identity, role/module permissions and secure invitations. Existing installations through 0008 apply only the two new migrations and the staged identity setup; do not reset the database. Invitation delivery additionally needs the server-only `SUPABASE_SECRET_KEY` and working Supabase Auth email/redirect settings.
+
+## Al-Fikr, import, dashboard and personal account update
+
+See [the finishing update guide](docs/finishing-update.md) for migrations 0011–0013, invitation setup, live three-account checks, CSV/XLSX import, Settings and My Profile. Existing installations through 0010 run only the three new SQL files. No live database/account changes or email sends were performed from the development workspace.

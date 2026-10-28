@@ -18,6 +18,12 @@ export async function acceptInvitation(_: { error: string }, form: FormData) {
     return {
       error: "Open the invitation email link again to verify your account.",
     };
+  const pendingInvite = await db.rpc("invitation_for_me");
+  if (pendingInvite.error || !pendingInvite.data)
+    return {
+      error:
+        "No valid pending invitation was found for this signed-in account. Your password was not changed. Open the correct invitation in a private browser window.",
+    };
   const changed = await db.auth.updateUser({ password });
   if (changed.error)
     return {

@@ -1857,3 +1857,44 @@ textarea {
   height: 1rem;
   accent-color: #13836c;
 }
+
+.notification-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  border-radius: 10px;
+  padding: 1px 5px;
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+}
+.notification-popover {
+  width: min(340px, 85vw);
+  max-height: 420px;
+  overflow: auto;
+}
+.notification-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.notification-item.unread {
+  font-weight: 600;
+}
+.notification-item small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.import-preview-scroll {
+  max-height: 420px;
+  overflow: auto;
+}
+.import-preview-scroll th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
+}

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { invoiceFileInfo } from "@/lib/finance/files";
 import { invoiceAccess } from "@/lib/finance/access";
 import { idSchema, versionSchema } from "@/lib/sales/validation";
 import { reply, sameOrigin } from "../../route";
@@ -51,21 +52,10 @@ export async function POST(request: NextRequest, ctx: Context) {
   )
     return reply({ error: "Choose a PDF, PNG or JPEG file up to 10 MB." }, 400);
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const mime =
-    bytes[0] === 0x25 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x44 &&
-    bytes[3] === 0x46 &&
-    bytes[4] === 0x2d
-      ? "application/pdf"
-      : bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
-        ? "image/jpeg"
-        : bytes.slice(0, 8).join(",") === "137,80,78,71,13,10,26,10"
-          ? "image/png"
-          : null;
-  if (!mime)
+  const info = invoiceFileInfo(bytes, file.name);
+  if (!info)
     return reply(
-      { error: "The file must contain a PDF, PNG or JPEG document." },
+      { error: "Choose a valid PDF, PNG or JPEG file up to 10 MB." },
       400,
     );
   const r = await access.db
@@ -80,7 +70,7 @@ export async function POST(request: NextRequest, ctx: Context) {
   const path = `${id}/${crypto.randomUUID()}`;
   const bucket = access.db.storage.from("supplier-invoices");
   const uploaded = await bucket.upload(path, bytes, {
-    contentType: mime,
+    contentType: info.mime,
     upsert: false,
   });
   if (uploaded.error)
@@ -95,7 +85,7 @@ export async function POST(request: NextRequest, ctx: Context) {
     .from("supplier_invoices")
     .update({
       file_path: path,
-      file_name: file.name.replace(/[\r\n\x00]/g, ""),
+      file_name: info.filename,
     })
     .eq("id", id)
     .eq("revision", v.data)

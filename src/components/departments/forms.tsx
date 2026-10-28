@@ -221,7 +221,13 @@ export function DepartmentForm({
                         : "text"
                   }
                   min={["integer", "money"].includes(f.type) ? 0 : undefined}
-                  max={f.type === "integer" ? 2147483647 : undefined}
+                  max={
+                    f.type === "integer"
+                      ? f.key === "publication_year"
+                        ? 9999
+                        : 2147483647
+                      : undefined
+                  }
                   step={
                     f.type === "integer"
                       ? 1
