@@ -18,7 +18,7 @@ The project stores npm's cache in the ignored `.npm-cache` directory so installa
 ## Supabase setup
 
 1. Create a Supabase project. Disable public registration in **Authentication → Providers / Sign In settings**. Configure your application URL and allowed redirect URLs for each deployment.
-2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0005). For an existing Sales installation with 0001/0002 applied, apply only 0003 Marketing, 0004 Operations, and 0005 Training. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
+2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0008). For an existing installation with 0001–0005 applied, apply only 0006–0008. If only 0001/0002 are applied, continue from 0003 through 0008. Supplier Invoice access is granted separately using the explicitly approved-account script in the update guide. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
 3. Copy `.env.example` to `.env.local` and set:
    - `NEXT_PUBLIC_SUPABASE_URL`: project HTTPS URL.
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: project's public publishable key. A public anonymous key also works under this variable name for older projects.
@@ -129,3 +129,7 @@ Deploy to Vercel as a Next.js application with Node.js 24 and the two documented
 - `src/proxy.ts`: server auth-cookie refresh.
 - `supabase/migrations`: database structure, capabilities, grants, RLS and audit triggers.
 - `tests`: unit, PostgreSQL security and browser smoke tests.
+
+## Sales and private finance update
+
+See [the Windows update and database guide](docs/sales-finance-update.md) for migrations 0006–0008, approved-account setup, Caution, subscription payments and private invoice storage. Existing 0001–0005 installations must apply only the new migrations, without a reset.

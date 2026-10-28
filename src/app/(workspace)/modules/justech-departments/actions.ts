@@ -85,7 +85,7 @@ export async function saveDepartment(
     const code = response.error.code;
     return fail(
       code === "23505"
-        ? "This participant/session or history entry already exists. Open the existing record instead."
+        ? section.slug === "caution" ? "This LCID already exists. Open the existing Caution record instead." : "This participant/session or history entry already exists. Open the existing record instead."
         : code === "23503"
           ? "A linked record is no longer available. Select an existing record and try again."
           : code === "23514"

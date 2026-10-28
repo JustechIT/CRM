@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { quotationStatuses, type SalesSection } from "./config";
+import {
+  quotationStatuses,
+  paymentStatuses,
+  type SalesSection,
+} from "./config";
 const text = (max = 250) => z.string().trim().max(max).default("");
 const requiredText = (max = 250) =>
   z.string().trim().min(1, "This field is required.").max(max);
@@ -67,6 +71,8 @@ const schemas = {
   subscriptions: z
     .object({
       ...references,
+      creation_date: dateValue.default(new Date().toISOString().slice(0, 10)),
+      payment_status: z.enum(paymentStatuses).default("Unpaid"),
       start_date: dateValue,
       end_date: dateValue,
       contract_duration: text(100),
@@ -95,6 +101,23 @@ const schemas = {
       contract_duration:
         v.contract_duration || contractDuration(v.start_date, v.end_date),
     })),
+  payments: z.object({
+    ...references,
+    invoice_reference: requiredText(),
+    amount: decimal,
+    currency: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{3}$/),
+    payment_date: dateValue,
+    payment_method: requiredText(100),
+    payment_status: z.enum(paymentStatuses),
+    notes: text(5000),
+    subscription_id: z
+      .union([z.literal(""), z.uuid()])
+      .transform((v) => v || null),
+  }),
   renewals: z.object({
     ...references,
     expiry_date: dateValue,

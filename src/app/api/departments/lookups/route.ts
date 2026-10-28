@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     );
   const allowed: Record<string, string[]> = {
     marketing: ["employees", "products"],
-    operations: ["employees", "projects", "accounts", "contacts"],
+    operations: ["employees", "projects", "accounts", "contacts", "products"],
     training: ["employees", "products", "accounts", "sessions"],
   };
   if (!entity || !allowed[dept].includes(entity))

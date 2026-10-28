@@ -1815,3 +1815,12 @@ textarea {
     padding: 12px;
   }
 }
+
+.refund-yes {
+  color: #166534;
+  background: #dcfce7;
+}
+.refund-no {
+  color: #9a3412;
+  background: #ffedd5;
+}

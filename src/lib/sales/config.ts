@@ -1,5 +1,5 @@
 export type SalesSection =
-  "opportunities" | "quotations" | "subscriptions" | "renewals";
+  "opportunities" | "quotations" | "subscriptions" | "renewals" | "payments";
 export type SubscriptionKind = "Turnitin" | "Other";
 export type SalesField = {
   key: string;
@@ -12,11 +12,19 @@ export type SalesField = {
     | "product"
     | "textarea"
     | "currency"
-    | "duration";
+    | "duration"
+    | "select"
+    | "subscription";
   required?: boolean;
   suggestions?: readonly string[];
   help?: string;
 };
+export const paymentStatuses = [
+  "Invoice sent",
+  "Unpaid",
+  "Partially Paid",
+  "Paid",
+] as const;
 export const opportunityStages = [
   "New",
   "Qualified",
@@ -144,7 +152,7 @@ export const salesDefinitions: Record<
     ],
   },
   subscriptions: {
-    title: "Subscriptions",
+    title: "Subscriptions / Renewals",
     singular: "subscription",
     table: "sales_subscriptions",
     searchColumn: "contract_duration",
@@ -152,6 +160,19 @@ export const salesDefinitions: Record<
     fields: [
       { key: "account_id", label: "Customer", type: "account", required: true },
       { key: "product_id", label: "Product", type: "product", required: true },
+      {
+        key: "creation_date",
+        label: "Creation Date",
+        type: "date",
+        required: true,
+      },
+      {
+        key: "payment_status",
+        label: "Payment Status",
+        type: "select",
+        required: true,
+        suggestions: paymentStatuses,
+      },
       { key: "start_date", label: "Start Date", type: "date", required: true },
       { key: "end_date", label: "End Date", type: "date", required: true },
       {
@@ -179,6 +200,47 @@ export const salesDefinitions: Record<
         type: "currency",
         help: "Revenue is shown separately for each currency; amounts are never converted or combined.",
       },
+    ],
+  },
+  payments: {
+    title: "Payments",
+    singular: "payment",
+    table: "sales_payments",
+    searchColumn: "invoice_reference",
+    defaultSort: "payment_date",
+    fields: [
+      { key: "account_id", label: "Customer", type: "account", required: true },
+      { key: "product_id", label: "Product", type: "product", required: true },
+      {
+        key: "invoice_reference",
+        label: "Invoice / Reference Number",
+        type: "text",
+        required: true,
+      },
+      { key: "amount", label: "Amount", type: "money", required: true },
+      { key: "currency", label: "Currency", type: "currency", required: true },
+      {
+        key: "payment_date",
+        label: "Payment Date",
+        type: "date",
+        required: true,
+      },
+      {
+        key: "payment_method",
+        label: "Payment Method",
+        type: "text",
+        required: true,
+        suggestions: ["Bank transfer", "Card", "Cash", "Cheque", "Other"],
+      },
+      {
+        key: "payment_status",
+        label: "Payment Status",
+        type: "select",
+        required: true,
+        suggestions: paymentStatuses,
+      },
+      { key: "notes", label: "Notes", type: "textarea" },
+      { key: "subscription_id", label: "Subscription", type: "subscription" },
     ],
   },
   renewals: {
@@ -221,6 +283,7 @@ export function salesPath(
   section: SalesSection | "overview",
   kind?: SubscriptionKind,
 ) {
+  if (section === "renewals") return `${salesBase}/subscriptions?tracking=1`;
   return `${salesBase}/${section}${section === "subscriptions" ? `?kind=${kind ?? "Turnitin"}` : ""}`;
 }
 export const overviewIndicators = [

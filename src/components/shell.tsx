@@ -91,12 +91,20 @@ export function Shell({
   children,
   name,
   preview,
+  supplierInvoices = false,
 }: {
   children: React.ReactNode;
   name: string;
   preview: boolean;
+  supplierInvoices?: boolean;
 }) {
   const pathname = usePathname();
+  const visibleNavigation = navigation.filter(
+    (s) => s.label !== "Finance" || supplierInvoices,
+  );
+  const visiblePages = allPages.filter(
+    (p) => !p.href.startsWith("/finance/") || supplierInvoices,
+  );
   const [collapsed, setCollapsed] = usePreference(
     "justech.sidebar",
     "expanded",
@@ -109,7 +117,7 @@ export function Shell({
     if (Array.isArray(raw))
       pins = raw.filter(
         (v): v is string =>
-          typeof v === "string" && allPages.some((p) => p.href === v),
+          typeof v === "string" && visiblePages.some((p) => p.href === v),
       );
   } catch {}
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -235,7 +243,7 @@ export function Shell({
             ))}
           </div>
         )}
-        {navigation.map((section) => (
+        {visibleNavigation.map((section) => (
           <div className="nav-group" key={section.label}>
             <h2>{isCollapsed ? "·" : section.label}</h2>
             {section.items.map((item) => {
@@ -381,7 +389,7 @@ export function Shell({
             <strong>{pageTitle(pathname)}</strong>
           </div>
           <div className="topbar-actions">
-            {allPages.some((p) => p.href === pathname) && (
+            {visiblePages.some((p) => p.href === pathname) && (
               <button
                 className="icon-button pin-control"
                 aria-label={

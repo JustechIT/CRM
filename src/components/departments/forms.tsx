@@ -211,15 +211,21 @@ export function DepartmentForm({
                 <input
                   name={f.key}
                   type={
-                    f.type === "integer"
+                    ["integer", "money"].includes(f.type)
                       ? "number"
                       : ["date", "url", "email"].includes(f.type)
                         ? f.type
                         : "text"
                   }
-                  min={f.type === "integer" ? 0 : undefined}
+                  min={["integer", "money"].includes(f.type) ? 0 : undefined}
                   max={f.type === "integer" ? 2147483647 : undefined}
-                  step={f.type === "integer" ? 1 : undefined}
+                  step={
+                    f.type === "integer"
+                      ? 1
+                      : f.type === "money"
+                        ? "0.001"
+                        : undefined
+                  }
                   required={f.required}
                   maxLength={f.max ?? (f.type === "url" ? 2048 : 250)}
                   defaultValue={

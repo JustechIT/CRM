@@ -29,13 +29,23 @@ export const navigation: { label: string; items: NavItem[] }[] = [
   {
     label: "Justech",
     items: [
-      department("Sales", "justech-sales", "sales", [
-        "Overview",
-        "Opportunities",
-        "Quotations",
-        "Subscriptions",
-        "Renewals",
-      ]),
+      {
+        label: "Sales",
+        href: "/modules/justech-sales/overview",
+        icon: "sales",
+        children: [
+          { label: "Overview", href: "/modules/justech-sales/overview" },
+          {
+            label: "Opportunities",
+            href: "/modules/justech-sales/opportunities",
+          },
+          {
+            label: "Subscriptions / Renewals",
+            href: "/modules/justech-sales/subscriptions",
+          },
+          { label: "Payments", href: "/modules/justech-sales/payments" },
+        ],
+      },
       department("Marketing", "justech-marketing", "marketing", [
         "Overview",
         "Campaigns",
@@ -49,6 +59,7 @@ export const navigation: { label: string; items: NavItem[] }[] = [
         children: [
           { label: "Overview", href: "/modules/justech-operations/overview" },
           { label: "Tasks", href: "/modules/justech-operations/tasks" },
+          { label: "Caution", href: "/modules/justech-operations/caution" },
           {
             label: "Projects & Delivery",
             href: "/modules/justech-operations/projects-delivery",
@@ -69,6 +80,16 @@ export const navigation: { label: string; items: NavItem[] }[] = [
         "Registrations",
         "Training History",
       ]),
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      {
+        label: "Supplier Invoices",
+        href: "/finance/supplier-invoices",
+        icon: "sales",
+      },
     ],
   },
   {

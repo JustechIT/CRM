@@ -59,7 +59,7 @@ test("navigation has unique routes and complete department structure", () => {
     7,
   );
   assert.equal(
-    activeDepartment("/modules/justech-sales/renewals"),
+    activeDepartment("/modules/justech-sales/subscriptions"),
     "/modules/justech-sales/overview",
   );
   assert.equal(activeDepartment("/directory"), null);

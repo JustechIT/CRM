@@ -63,12 +63,19 @@ test("department navigation, pinning and responsive menu work", async ({
       ? page.getByRole("dialog", { name: "Mobile navigation" })
       : page.locator("aside.sidebar");
   await nav.getByRole("button", { name: "Sales", exact: true }).first().click();
-  await nav.getByRole("link", { name: "Renewals", exact: true }).click();
+  await nav
+    .getByRole("link", { name: "Subscriptions / Renewals", exact: true })
+    .click();
   await expect(
-    page.getByRole("heading", { name: "Renewals", exact: true }),
+    page.getByRole("heading", {
+      name: "Turnitin Subscriptions / Renewals",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(
-    page.getByRole("region", { name: "Renewals table" }),
+    page.getByRole("region", {
+      name: "Turnitin Subscriptions / Renewals table",
+    }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Pin current page" }).click();
   await page.reload();

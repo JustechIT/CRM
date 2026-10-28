@@ -13,6 +13,10 @@ export async function proxy(request: NextRequest) {
           /^\/modules\/justech-(marketing|operations|training)(?:\/|$)/,
         )?.[1]
       : undefined;
+  const privateMutation =
+    request.method === "POST" &&
+    (request.nextUrl.pathname.startsWith("/finance/") ||
+      request.nextUrl.pathname === "/team");
   const mutationScope = salesMutation ? "sales" : departmentMutation;
   const scopeLabel = salesMutation ? "Sales" : "Department";
   function deny(status: number, message: string) {
@@ -26,7 +30,7 @@ export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key)
-    return mutationScope
+    return mutationScope || privateMutation
       ? deny(401, `${scopeLabel} access required. No record was saved.`)
       : response;
   const db = createServerClient(url, key, {
@@ -44,6 +48,14 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await db.auth.getUser();
+  if (privateMutation) {
+    if (!user) return deny(401, "Private access required.");
+    const r = await db.rpc("supplier_invoice_allowed", {
+      manage: request.nextUrl.pathname === "/team",
+    });
+    if (r.error || r.data !== true)
+      return deny(403, "Private access required.");
+  }
   if (mutationScope) {
     if (!user)
       return deny(401, `${scopeLabel} access required. No record was saved.`);

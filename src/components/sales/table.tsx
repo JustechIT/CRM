@@ -7,6 +7,7 @@ import {
   renewalStages,
   subscriptionStatuses,
   quotationStatuses,
+  paymentStatuses,
   type SalesSection,
   type SubscriptionKind,
 } from "@/lib/sales/config";
@@ -83,25 +84,32 @@ export function SalesFilters({
   filters: SalesFilters;
 }) {
   const statuses =
-    section === "opportunities"
-      ? opportunityStages
-      : section === "quotations"
-        ? quotationStatuses
-        : section === "subscriptions"
-          ? subscriptionStatuses
-          : renewalStages;
+    section === "payments"
+      ? paymentStatuses
+      : section === "opportunities"
+        ? opportunityStages
+        : section === "quotations"
+          ? quotationStatuses
+          : section === "subscriptions"
+            ? subscriptionStatuses
+            : renewalStages;
   const dateLabel =
-    section === "opportunities"
-      ? "Date"
-      : section === "subscriptions"
-        ? "End Date"
-        : "Expiry Date";
+    section === "payments"
+      ? "Payment Date"
+      : section === "opportunities"
+        ? "Date"
+        : section === "subscriptions"
+          ? "End Date"
+          : "Expiry Date";
   return (
     <form
       className="sales-filters"
       method="get"
       aria-label="Filter Sales records"
     >
+      {filters.subscription && (
+        <input type="hidden" name="subscription" value={filters.subscription} />
+      )}
       {kind && <input type="hidden" name="kind" value={kind} />}
       <label className="sales-search">
         Search

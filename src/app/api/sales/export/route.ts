@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     );
   const params = Object.fromEntries(request.nextUrl.searchParams);
   const section = params.section;
-  if (!isSalesSection(section))
+  if (!isSalesSection(section) || section === "quotations")
     return NextResponse.json(
       { error: "Invalid Sales section." },
       { status: 400 },

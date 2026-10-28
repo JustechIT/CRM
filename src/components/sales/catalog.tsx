@@ -59,7 +59,7 @@ export async function ProductCatalog({
       <PageHeader
         eyebrow="Justech Sales · Shared products"
         title="Product catalog"
-        description="Create a product once, then use it across opportunities, quotations and subscriptions."
+        description="Create a product once, then use it across opportunities, payments and subscriptions."
       >
         <Link className="button" href={salesPath("subscriptions")}>
           <ArrowLeft size={15} />

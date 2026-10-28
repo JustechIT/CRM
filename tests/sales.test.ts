@@ -20,7 +20,7 @@ const refs = {
   account_id: "11111111-1111-4111-8111-111111111111",
   product_id: "22222222-2222-4222-8222-222222222222",
 };
-test("Sales column names and ordering match the source workbook plus the user's two approved columns", async () => {
+test("Sales columns preserve the workbook and approved subscription additions", async () => {
   const spec = JSON.parse(
     await readFile(
       new URL("../docs/specifications/justech-sales.json", import.meta.url),
@@ -42,7 +42,14 @@ test("Sales column names and ordering match the source workbook plus the user's 
   ])
     assert.deepEqual(
       salesDefinitions.subscriptions.fields.map((f) => f.label),
-      [...spec[sheet], "Annual Amount", "Currency"],
+      [
+        ...spec[sheet].slice(0, 2),
+        "Creation Date",
+        "Payment Status",
+        ...spec[sheet].slice(2),
+        "Annual Amount",
+        "Currency",
+      ],
     );
   assert.deepEqual([...overviewIndicators], spec["JS - Overview"]);
 });
@@ -105,7 +112,7 @@ test("subscription revenue needs a currency, supports zero values and calculates
   };
   const r = validateSales("subscriptions", value);
   assert.equal(r.success, true);
-  if (r.success && "currency" in r.data) {
+  if (r.success && "contract_duration" in r.data) {
     assert.equal(r.data.currency, "TND");
     assert.equal(r.data.contract_duration, "365 days");
   }

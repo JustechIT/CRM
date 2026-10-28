@@ -11,6 +11,16 @@ import {
 import { validate } from "../src/lib/departments/validation";
 const uuid = "11111111-1111-4111-8111-111111111111";
 const samples: Record<string, Record<string, string>> = {
+  caution: {
+    lcid: "LC-1",
+    nom: "Name",
+    compte_no: "001",
+    amount: "123.456",
+    account_id: uuid,
+    product_id: uuid,
+    subscription_period: "Annual",
+    refunded: "No",
+  },
   campaigns: {
     name: "Campaign",
     platform: "LinkedIn",
@@ -91,7 +101,7 @@ const samples: Record<string, Record<string, string>> = {
     outcome: "Completed the workshop",
   },
 };
-test("All ten tables follow the workbook and explicit latest-message label corrections", async () => {
+test("Department tables follow the workbook and approved Caution changes", async () => {
   const spec = JSON.parse(
     await readFile(
       new URL(
@@ -101,9 +111,21 @@ test("All ten tables follow the workbook and explicit latest-message label corre
       "utf8",
     ),
   );
-  assert.equal(sections.length, 10);
+  assert.equal(sections.length, 11);
   for (const section of sections) {
-    const expected = [...spec[section.sheet]];
+    const expected =
+      section.slug === "caution"
+        ? [
+            "LCID",
+            "NOM",
+            "COMPTENO",
+            "AMOUNT",
+            "Customer",
+            "Product",
+            "Subscription Period",
+            "Refunded",
+          ]
+        : [...spec[section.sheet]];
     if (section.slug === "campaigns") expected[1] = "Platform";
     assert.deepEqual(
       section.fields.map((f) => f.label),
@@ -277,7 +299,7 @@ test("Registry exposes only the requested three departments and unique canonical
     assert.equal(isDepartment(value), false);
   assert.equal(
     new Set(sections.map((s) => modulePath(s.department, s.slug))).size,
-    10,
+    11,
   );
   assert.equal(getSection("marketing", "training-sessions"), undefined);
 });

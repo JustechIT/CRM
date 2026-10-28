@@ -11,6 +11,7 @@ export type Field = {
     | "url"
     | "email"
     | "integer"
+    | "money"
     | "select"
     | "reference"
     | "project"

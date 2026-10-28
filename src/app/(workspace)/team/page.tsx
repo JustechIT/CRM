@@ -1,3 +1,5 @@
+import { invoiceAccess } from "@/lib/finance/access";
+import { InvoiceAccessForm } from "@/components/finance/access-form";
 import { database, isConfigured } from "@/lib/supabase";
 import { PageHeader, EmptyState, Badge } from "@/components/ui";
 export default async function Team() {
@@ -13,6 +15,11 @@ export default async function Team() {
     members = r.data ?? [];
     failed = !!r.error;
   }
+  const manager = await invoiceAccess(true);
+  const grants = manager
+    ? await manager.db.from("supplier_invoice_access").select("user_id")
+    : null;
+  const allowed = new Set((grants?.data ?? []).map((g) => g.user_id));
   return (
     <>
       <PageHeader
@@ -32,6 +39,7 @@ export default async function Team() {
                 <tr>
                   <th>Team member</th>
                   <th>Status</th>
+                  {manager && <th>Private Supplier Invoices</th>}
                 </tr>
               </thead>
               <tbody>
@@ -41,6 +49,19 @@ export default async function Team() {
                     <td>
                       <Badge>{m.status}</Badge>
                     </td>
+                    {manager && (
+                      <td>
+                        {grants?.error ? (
+                          "Permissions unavailable"
+                        ) : (
+                          <InvoiceAccessForm
+                            userId={m.id}
+                            allowed={allowed.has(m.id)}
+                            self={m.id === manager.profile.id}
+                          />
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

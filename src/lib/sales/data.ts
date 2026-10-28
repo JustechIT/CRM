@@ -39,6 +39,7 @@ export type SalesFilters = {
   to: string;
   window: string;
   followup: string;
+  subscription: string;
 };
 export function salesFilters(
   section: SalesSection,
@@ -47,6 +48,9 @@ export function salesFilters(
   const definition = salesDefinitions[section];
   const sort = parameter(params, "sort");
   return {
+    subscription: z.uuid().safeParse(parameter(params, "subscription")).success
+      ? parameter(params, "subscription")
+      : "",
     q: parameter(params, "q").trim().slice(0, 100),
     status: parameter(params, "status").trim().slice(0, 100),
     sort: definition.fields.some((f) => f.key === sort)
@@ -71,14 +75,18 @@ export function listQuery(
 ) {
   const def = salesDefinitions[section];
   const sort =
-    filters.sort === "account_id"
-      ? "account_name"
-      : filters.sort === "product_id"
-        ? "product_name"
-        : filters.sort;
+    filters.sort === "subscription_id"
+      ? "subscription_label"
+      : filters.sort === "account_id"
+        ? "account_name"
+        : filters.sort === "product_id"
+          ? "product_name"
+          : filters.sort;
   let query = access.db
     .from(`${def.table}_list`)
     .select("*", { count: "exact" });
+  if (section === "payments" && filters.subscription)
+    query = query.eq("subscription_id", filters.subscription);
   if (section === "subscriptions" && kind) query = query.eq("kind", kind);
   if (filters.q)
     query = query.ilike(
@@ -87,23 +95,27 @@ export function listQuery(
     );
   if (filters.status) {
     const key =
-      section === "opportunities"
-        ? "stage"
-        : section === "quotations"
-          ? "decision_status"
-          : section === "subscriptions"
-            ? "status"
-            : "renewal_stage";
+      section === "payments"
+        ? "payment_status"
+        : section === "opportunities"
+          ? "stage"
+          : section === "quotations"
+            ? "decision_status"
+            : section === "subscriptions"
+              ? "status"
+              : "renewal_stage";
     query = query.ilike(key, filters.status.replace(/[\\%_]/g, "\\$&"));
   }
   const dateKey =
-    section === "opportunities"
-      ? "date"
-      : section === "subscriptions"
-        ? "end_date"
-        : section === "renewals"
-          ? "expiry_date"
-          : null;
+    section === "payments"
+      ? "payment_date"
+      : section === "opportunities"
+        ? "date"
+        : section === "subscriptions"
+          ? "end_date"
+          : section === "renewals"
+            ? "expiry_date"
+            : null;
   if (dateKey && filters.from) query = query.gte(dateKey, filters.from);
   if (dateKey && filters.to) query = query.lte(dateKey, filters.to);
   if (
@@ -138,7 +150,7 @@ export async function loadSalesList(
   ).range((filters.page - 1) * 25, filters.page * 25 - 1);
   if (error)
     throw new Error(
-      "Sales records could not be loaded. Check that migration 0002 is applied and your Sales permissions are active.",
+      "Sales records could not be loaded. Apply migrations through 0006 and check your Sales permissions.",
     );
   return { records: (data ?? []) as SalesRecord[], count: count ?? 0 };
 }

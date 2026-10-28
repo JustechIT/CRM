@@ -40,7 +40,7 @@ export default async function Dashboard() {
       <div className="metrics">
         {[
           ["Active opportunities", BriefcaseBusiness],
-          ["Pending quotations", FileText],
+          ["Caution records", FileText],
           ["Upcoming renewals", CalendarClock],
           ["Open tasks", ListTodo],
         ].map(([label, Icon]) => {

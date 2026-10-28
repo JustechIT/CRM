@@ -10,7 +10,6 @@ const sections = [
     sheet: "JS - Opportunities",
     singular: "opportunity",
   },
-  { path: "quotations", sheet: "JS - Quotations", singular: "quotation" },
   {
     path: "subscriptions?kind=Turnitin",
     sheet: "JS - Turnitin Subscriptions",
@@ -30,7 +29,14 @@ test("Sales tables retain every workbook column and approved subscription additi
     await page.goto(`${base}/${section.path}`);
     const expected =
       section.singular === "subscription"
-        ? [...spec[section.sheet], "Annual Amount", "Currency"]
+        ? [
+            ...spec[section.sheet].slice(0, 2),
+            "Creation Date",
+            "Payment Status",
+            ...spec[section.sheet].slice(2),
+            "Annual Amount",
+            "Currency",
+          ]
         : spec[section.sheet];
     await expect(page.locator(".sales-table th")).toHaveText(expected);
     await expect(
@@ -63,7 +69,14 @@ test("each Sales form opens in the existing shell and saving requires permission
     ).toBeDisabled();
     const names =
       section.singular === "subscription"
-        ? [...spec[section.sheet], "Annual Amount", "Currency"]
+        ? [
+            ...spec[section.sheet].slice(0, 2),
+            "Creation Date",
+            "Payment Status",
+            ...spec[section.sheet].slice(2),
+            "Annual Amount",
+            "Currency",
+          ]
         : spec[section.sheet];
     for (const name of names)
       await expect(
@@ -81,7 +94,9 @@ test("year selector and currency-separated zero revenue work without fake record
   page,
 }) => {
   await page.goto(`${base}/overview`);
-  for (const label of spec["JS - Overview"])
+  for (const label of spec["JS - Overview"].filter(
+    (v: string) => v !== "Pending Quotations",
+  ))
     await expect(page.getByText(label, { exact: true })).toBeVisible();
   await expect(page.locator(".sales-currency-values strong")).toHaveText([
     "0",
@@ -115,14 +130,14 @@ test("filters and subscription tabs remain simple and preserve their section", a
     .getByRole("link", { name: "Turnitin Subscriptions", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Turnitin Subscriptions" }),
+    page.getByRole("heading", { name: "Turnitin Subscriptions / Renewals" }),
   ).toBeVisible();
 });
-test("quotation table scrolls inside its panel without page overflow", async ({
+test("Caution table scrolls inside its panel without page overflow", async ({
   page,
 }) => {
   await page.goto(`${base}/quotations`);
-  const region = page.getByRole("region", { name: "Quotations table" });
+  const region = page.getByRole("region", { name: "Caution table" });
   const first = page.getByRole("columnheader", { name: "LCID", exact: true });
   const before = await first.boundingBox();
   await region.evaluate((el) => {

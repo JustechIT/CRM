@@ -10,10 +10,12 @@ export function SalesLookup({
   initialLabel = "",
   kind,
   disabled,
+  required = true,
 }: {
   name: string;
   label: string;
-  entity: "accounts" | "products";
+  entity: "accounts" | "products" | "subscriptions";
+  required?: boolean;
   initialId?: string;
   initialLabel?: string;
   kind?: string;
@@ -79,7 +81,10 @@ export function SalesLookup({
         if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
       }}
     >
-      <label htmlFor={listId + "-input"}>{label} *</label>
+      <label htmlFor={listId + "-input"}>
+        {label}
+        {required ? " *" : ""}
+      </label>
       <input type="hidden" name={name} value={selected} />
       <input
         type="hidden"
@@ -97,7 +102,7 @@ export function SalesLookup({
           aria-activedescendant={index >= 0 ? `${listId}-${index}` : undefined}
           autoComplete="off"
           disabled={disabled}
-          required
+          required={required}
           value={input}
           placeholder={`Search ${entity === "accounts" ? "institutions" : "products"}…`}
           onFocus={() => {

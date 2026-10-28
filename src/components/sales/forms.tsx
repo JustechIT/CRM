@@ -48,6 +48,9 @@ export function SalesForm({
   const source = record ?? prefill;
   const defaults: Record<string, string> = {
     date: utcDay(),
+    creation_date: utcDay(),
+    payment_date: utcDay(),
+    payment_status: "Unpaid",
     stage: "New",
     renewal_stage: "Not started",
     status: "Active",
@@ -81,18 +84,31 @@ export function SalesForm({
       {kind && <input type="hidden" name="kind" value={kind} />}
       <div className="form-grid">
         {definition.fields.map((field) =>
-          field.type === "account" || field.type === "product" ? (
+          field.type === "account" ||
+          field.type === "product" ||
+          field.type === "subscription" ? (
             <SalesLookup
               key={`${field.key}-${state.error}`}
               name={field.key}
               label={field.label}
-              entity={field.type === "account" ? "accounts" : "products"}
+              entity={
+                field.type === "account"
+                  ? "accounts"
+                  : field.type === "subscription"
+                    ? "subscriptions"
+                    : "products"
+              }
+              required={field.required ?? field.type !== "subscription"}
               initialId={fieldValue(field.key)}
               initialLabel={
                 state.fields?.[field.key + "_label"] ??
                 value(
                   source,
-                  field.type === "account" ? "account_name" : "product_name",
+                  field.type === "account"
+                    ? "account_name"
+                    : field.type === "subscription"
+                      ? "subscription_label"
+                      : "product_name",
                 )
               }
               kind={
@@ -109,7 +125,17 @@ export function SalesForm({
             >
               {field.label}
               {field.required ? " *" : ""}
-              {field.type === "textarea" ? (
+              {field.type === "select" ? (
+                <select
+                  name={field.key}
+                  required={field.required}
+                  defaultValue={fieldValue(field.key)}
+                >
+                  {field.suggestions?.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              ) : field.type === "textarea" ? (
                 <textarea
                   name={field.key}
                   maxLength={5000}
@@ -118,7 +144,15 @@ export function SalesForm({
               ) : (
                 <input
                   name={field.key}
-                  type={field.type === "date" ? "date" : "text"}
+                  type={
+                    field.type === "date"
+                      ? "date"
+                      : field.type === "money"
+                        ? "number"
+                        : "text"
+                  }
+                  step={field.type === "money" ? "0.001" : undefined}
+                  min={field.type === "money" ? 0 : undefined}
                   inputMode={field.type === "money" ? "decimal" : undefined}
                   required={field.required}
                   defaultValue={fieldValue(field.key)}

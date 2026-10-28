@@ -19,11 +19,13 @@ export function salesCsv(
           .map((f) =>
             csvCell(
               record[
-                f.key === "account_id"
-                  ? "account_name"
-                  : f.key === "product_id"
-                    ? "product_name"
-                    : f.key
+                f.key === "subscription_id"
+                  ? "subscription_label"
+                  : f.key === "account_id"
+                    ? "account_name"
+                    : f.key === "product_id"
+                      ? "product_name"
+                      : f.key
               ],
             ),
           )

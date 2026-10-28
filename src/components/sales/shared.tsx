@@ -27,6 +27,10 @@ export function link(
     if (value === null) next.delete(key);
     else next.set(key, value);
   }
+  if (section === "renewals") {
+    next.set("tracking", "1");
+    return `${salesBase}/subscriptions?${next}`;
+  }
   return `${salesBase}/${section}${next.size ? "?" + next : ""}`;
 }
 
@@ -48,7 +52,7 @@ export function SalesFailure() {
     <section className="panel">
       <EmptyState
         title="Sales is temporarily unavailable"
-        description="No records have been replaced with empty data. Check your connection, Sales permissions, and that database migration 0002 has been applied."
+        description="No records have been replaced with empty data. Check your connection, Sales permissions, and that database migrations through 0006 have been applied."
         action={<SalesRetry />}
       />
     </section>
@@ -76,7 +80,7 @@ export function SubscriptionTabs({ kind }: { kind: SubscriptionKind }) {
 
 export function sectionTitle(section: SalesSection, kind?: SubscriptionKind) {
   return section === "subscriptions"
-    ? `${kind} Subscriptions`
+    ? `${kind} Subscriptions / Renewals`
     : salesDefinitions[section].title;
 }
 
@@ -91,6 +95,8 @@ export function RecordValue({
     return <>{record.account_name ?? "Unavailable institution"}</>;
   if (field.key === "product_id")
     return <>{record.product_name ?? "Unavailable product"}</>;
+  if (field.type === "subscription")
+    return <>{textValue(record, "subscription_label") || "Not linked"}</>;
   const raw = textValue(record, field.key);
   if (!raw) return <>—</>;
   if (field.type === "money")
@@ -103,10 +109,12 @@ export function RecordValue({
           month: "short",
           year: "numeric",
           timeZone: "UTC",
-        }).format(new Date(raw + "T00:00:00Z"))}
+        }).format(new Date(raw.slice(0, 10) + "T00:00:00Z"))}
       </time>
     );
-  if (["status", "stage", "renewal_stage"].includes(field.key))
+  if (
+    ["status", "stage", "renewal_stage", "payment_status"].includes(field.key)
+  )
     return <Badge>{raw}</Badge>;
   return (
     <span className="sales-cell-text" title={raw}>

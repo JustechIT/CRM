@@ -63,6 +63,12 @@ export function FieldValue({
       <>Unavailable link</>
     );
   }
+  if (field.key === "refunded")
+    return (
+      <span className={`badge ${raw === "Yes" ? "refund-yes" : "refund-no"}`}>
+        {raw}
+      </span>
+    );
   if (field.type === "select") return <Badge>{raw}</Badge>;
   return (
     <span className="sales-cell-text" title={raw}>

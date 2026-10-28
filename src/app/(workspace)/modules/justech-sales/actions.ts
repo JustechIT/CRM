@@ -33,7 +33,7 @@ function databaseError(code?: string) {
   if (code === "23503")
     return "A linked institution or product is no longer available. Refresh and select an existing record.";
   if (code === "23514")
-    return "Check the dates and product category. A product with existing subscriptions cannot be moved to another category.";
+    return "Check dates, product category and linked payment details. Payment customer, product and currency must match the subscription. Existing linked payments must be reassigned before changing subscription references.";
   return "The record could not be saved. Check your permissions and connection, then try again.";
 }
 function refreshSales() {
@@ -49,6 +49,8 @@ export async function saveSales(
 ): Promise<SalesFormState> {
   if (!isSalesSection(sectionInput) || (id && !idSchema.safeParse(id).success))
     return failure("Invalid Sales record.", form);
+  if (sectionInput === "quotations")
+    return failure("Use Operations → Caution.", form);
   const section = sectionInput;
   const access = await authorized("sales.write");
   if (!access)
@@ -101,6 +103,10 @@ export async function saveSales(
       : undefined;
   const params = new URLSearchParams({ record: response.data.id, saved: "1" });
   if (kind) params.set("kind", kind);
+  if (section === "renewals") {
+    params.set("tracking", "1");
+    redirect(`${salesBase}/subscriptions?${params}`);
+  }
   redirect(`${salesBase}/${section}?${params}`);
 }
 export async function deleteSales(
@@ -111,6 +117,8 @@ export async function deleteSales(
 ): Promise<SalesFormState> {
   if (!isSalesSection(sectionInput) || !idSchema.safeParse(id).success)
     return { error: "Invalid Sales record." };
+  if (sectionInput === "quotations")
+    return { error: "Use Operations → Caution." };
   if (form.get("confirmation") !== "DELETE")
     return { error: "Type DELETE to confirm this permanent action." };
   const revision = versionSchema.safeParse(form.get("revision"));

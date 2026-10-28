@@ -9,6 +9,14 @@ export function validate(section: Section, input: unknown) {
     if (f.type === "project" || f.type === "party") continue;
     if (f.type === "reference") schema = id;
     else if (f.type === "date") schema = z.iso.date();
+    else if (f.type === "money")
+      schema = z
+        .string()
+        .trim()
+        .regex(
+          /^\d{1,12}(\.\d{1,3})?$/,
+          "Enter a non-negative numeric amount.",
+        );
     else if (f.type === "integer")
       schema = z
         .string()

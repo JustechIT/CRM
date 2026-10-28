@@ -4,7 +4,6 @@ import {
   ArrowUpRight,
   CalendarClock,
   BriefcaseBusiness,
-  FileText,
   RefreshCw,
   AlertCircle,
   BookOpen,
@@ -51,13 +50,6 @@ export async function SalesOverviewPage({
       note: "Open opportunities, excluding Won, Lost and Closed.",
     },
     {
-      label: overviewIndicators[1],
-      value: metrics?.pending_quotations,
-      icon: FileText,
-      href: salesPath("quotations") + "?status=Pending",
-      note: "Quotations with a Pending review status.",
-    },
-    {
       label: overviewIndicators[2],
       value: metrics?.active_subscriptions,
       icon: BookOpen,
@@ -68,7 +60,7 @@ export async function SalesOverviewPage({
       label: overviewIndicators[3],
       value: metrics?.upcoming_renewals,
       icon: RefreshCw,
-      href: salesPath("renewals") + "?window=90",
+      href: salesPath("renewals") + "&window=90",
       note: "Active subscriptions expiring within 90 days.",
     },
   ];
@@ -168,27 +160,22 @@ export async function SalesOverviewPage({
             </Link>
             <Link
               className="text-link"
-              href={`${salesPath("renewals")}?followup=overdue`}
+              href={`${salesPath("renewals")}&followup=overdue`}
             >
-              Renewals <ArrowUpRight size={13} />
+              Renewal tracking <ArrowUpRight size={13} />
             </Link>
           </div>
         </section>
       </div>
       <div className="sales-section-links">
-        {(
-          [
-            "opportunities",
-            "quotations",
-            "subscriptions",
-            "renewals",
-          ] as SalesSection[]
-        ).map((section) => (
-          <Link className="button" href={salesPath(section)} key={section}>
-            {salesDefinitions[section].title}
-            <ArrowUpRight size={14} />
-          </Link>
-        ))}
+        {(["opportunities", "subscriptions", "payments"] as SalesSection[]).map(
+          (section) => (
+            <Link className="button" href={salesPath(section)} key={section}>
+              {salesDefinitions[section].title}
+              <ArrowUpRight size={14} />
+            </Link>
+          ),
+        )}
       </div>
       <section className="panel">
         <div className="panel-heading">
@@ -212,7 +199,7 @@ export async function SalesOverviewPage({
                 </span>
                 <Link
                   className="button"
-                  href={`${salesPath("renewals")}?new=1&subscription=${s.id}`}
+                  href={`${salesPath("renewals")}&new=1&subscription=${s.id}`}
                 >
                   Prepare renewal
                 </Link>
@@ -256,7 +243,7 @@ export async function RenewalSuggestions({ access }: { access: SalesAccess }) {
             </span>
             <Link
               className="button"
-              href={`${salesPath("renewals")}?new=1&subscription=${s.id}`}
+              href={`${salesPath("renewals")}&new=1&subscription=${s.id}`}
             >
               Prepare renewal
             </Link>

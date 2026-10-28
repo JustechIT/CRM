@@ -57,3 +57,13 @@ The browser suite includes the existing Sales and application-shell regressions.
 The two initial browser failures were test locator mismatches for the sort-order dropdown; the corrected role-based locator passed on desktop and mobile in the final 40-test run. No test assertions or access policies were disabled.
 
 Hosted Supabase Authentication/PostgREST and authenticated browser CRUD were unavailable in this execution environment. PostgreSQL tests use isolated synthetic fixtures only; no customer data was seeded or migrated, no existing business records were reset and no website deployment was attempted. Apply new migrations 0003, 0004 and 0005 to the existing configured project before validating hosted persistence.
+
+## Sales, Operations Caution and private Supplier Invoices — 28 October 2026
+
+- `npm run lint`: passed. Generated browser traces/results and npm cache are explicitly excluded to avoid scans racing with Playwright output cleanup.
+- `npm run typecheck`: passed.
+- `npm test`: 63 passed, zero failed/skipped. New actual-PostgreSQL coverage applies 0006–0008 after seeding earlier-schema subscription/quotation/renewal records. It verifies hidden legacy data retention, Caution's Operations access, payment CRUD/reference/currency/balance integrity, default denial including Admin, explicit approved-user bootstrap, Souhail-only grant/revoke, audit privacy, inactive/revoked users, anonymous denial and private Storage RLS. A broad unrelated Storage read policy is deliberately present to verify the restrictive private-bucket fence.
+- `npm run build`: passed.
+- `CI=1 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e`: 48 passed on desktop/mobile. Covers new payment and Caution forms, exact columns, numeric/dropdown fields, integrated renewal links, current sidebar/pinning, safe preview save blocking, hidden Finance navigation, direct private page/API/file denials and forged access-management submissions.
+- Browser checks initially caught a required flag on the optional subscription selector; corrected and the full browser suite passed. Old tests expecting a separate Renewals sidebar item were updated to the user-approved Subscriptions / Renewals navigation. Initial SQL tests caught an audit-policy expression accidentally applied to the ACL policy; fixed before the passing migration run.
+- No remote Supabase migration, account grant, deployment or customer-record write was performed. Storage SQL policies are exercised using a local Storage schema stub. Authenticated hosted browser CRUD and actual Supabase file-service upload/download round trips must be checked in the connected project after applying the new SQL setup.

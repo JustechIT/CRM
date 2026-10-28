@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, unstable_rethrow } from "next/navigation";
+import { redirect, notFound, unstable_rethrow } from "next/navigation";
 import { Plus, ArrowLeft, ArrowUpRight } from "lucide-react";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { isConfigured } from "@/lib/supabase";
@@ -43,7 +43,23 @@ async function SalesContents({
 }) {
   if (slug.length !== 1 || (slug[0] !== "overview" && !isSalesSection(slug[0])))
     notFound();
-  const section = slug[0] as SalesSection | "overview";
+  if (slug[0] === "quotations") {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params))
+      if (typeof v === "string") q.set(k, v);
+    redirect(`/modules/justech-operations/caution${q.size ? "?" + q : ""}`);
+  }
+  if (slug[0] === "renewals") {
+    const q = new URLSearchParams({ tracking: "1" });
+    for (const [k, v] of Object.entries(params))
+      if (typeof v === "string") q.set(k, v);
+    redirect(`/modules/justech-sales/subscriptions?${q}`);
+  }
+  const section = (
+    slug[0] === "subscriptions" && parameter(params, "tracking") === "1"
+      ? "renewals"
+      : slug[0]
+  ) as SalesSection | "overview";
   const configured = isConfigured();
   const access = configured ? await authorized("sales.read") : null;
   const canWrite = !!access && !!(await authorized("sales.write"));
@@ -98,6 +114,23 @@ async function SalesContents({
   }
   if (parameter(params, "new") === "1") {
     let prefill: Record<string, unknown> | undefined;
+    if (section === "payments" && parameter(params, "subscription") && access) {
+      const sub = await loadSalesRecord(
+        access,
+        "subscriptions",
+        parameter(params, "subscription"),
+      );
+      if (sub)
+        prefill = {
+          subscription_id: sub.id,
+          subscription_label: `${sub.account_name} · ${sub.product_name} · ${sub.start_date} – ${sub.end_date}`,
+          account_id: sub.account_id,
+          account_name: sub.account_name,
+          product_id: sub.product_id,
+          product_name: sub.product_name,
+          currency: sub.currency,
+        };
+    }
     if (section === "renewals" && parameter(params, "subscription") && access) {
       const id = parameter(params, "subscription");
       if (!idSchema.safeParse(id).success) notFound();
@@ -160,7 +193,9 @@ async function SalesContents({
               ? "Clear quotation details, from reference to decision."
               : section === "subscriptions"
                 ? "Your institutions, products and contract periods, kept together."
-                : "Give every expiring relationship a clear next step."
+                : section === "payments"
+                  ? "Record payments and follow subscription balances in each currency."
+                  : "Give every expiring relationship a clear next step."
         }
       >
         <SalesExport
@@ -175,6 +210,19 @@ async function SalesContents({
           New {salesDefinitions[section].singular}
         </Link>
       </PageHeader>
+      {(section === "subscriptions" || section === "renewals") && (
+        <nav
+          className="tabs sales-tabs"
+          aria-label="Subscriptions and renewal tracking"
+        >
+          <Link href={salesPath("subscriptions")}>
+            Subscriptions / Renewals
+          </Link>
+          <Link href="/modules/justech-sales/subscriptions?tracking=1">
+            Renewal tracking
+          </Link>
+        </nav>
+      )}
       {section === "subscriptions" && kind && <SubscriptionTabs kind={kind} />}
       <div className="sales-list-context">
         <span>

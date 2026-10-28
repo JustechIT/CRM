@@ -42,11 +42,13 @@ export async function SalesDetail({
     kind = textValue(record, "kind") === "Other" ? "Other" : "Turnitin";
   const editing = parameter(params, "edit") === "1";
   const title =
-    section === "opportunities"
-      ? textValue(record, "name")
-      : section === "quotations"
-        ? textValue(record, "lcid")
-        : (record.account_name ?? "Subscription");
+    section === "payments"
+      ? textValue(record, "invoice_reference")
+      : section === "opportunities"
+        ? textValue(record, "name")
+        : section === "quotations"
+          ? textValue(record, "lcid")
+          : (record.account_name ?? "Subscription");
   return (
     <>
       {parameter(params, "saved") === "1" && (
@@ -139,13 +141,54 @@ export async function SalesDetail({
             <div className="sales-inline-actions">
               <Link
                 className="button"
-                href={`${salesPath("renewals")}?new=1&subscription=${record.id}`}
+                href={`${salesPath("renewals")}&new=1&subscription=${record.id}`}
               >
                 Prepare renewal
               </Link>
             </div>
           )}
         </>
+      )}
+      {!editing && section === "subscriptions" && (
+        <section className="panel sales-record-detail">
+          <h2>Payment history & balance</h2>
+          <p className="muted">
+            Amounts marked Paid or Partially Paid represent money received.
+            Other statuses do not reduce the balance. Annual Amount is used as
+            the expected amount; no currencies are combined.
+          </p>
+          <dl>
+            <div>
+              <dt>Received</dt>
+              <dd>
+                {textValue(record, "received_amount") || "0"}{" "}
+                {textValue(record, "currency")}
+              </dd>
+            </div>
+            <div>
+              <dt>Remaining balance</dt>
+              <dd>
+                {record.remaining_balance === null
+                  ? "Add an Annual Amount to calculate"
+                  : `${textValue(record, "remaining_balance")} ${textValue(record, "currency")}`}
+              </dd>
+            </div>
+          </dl>
+          <Link
+            className="button"
+            href={`/modules/justech-sales/payments?subscription=${record.id}`}
+          >
+            View payment history
+          </Link>{" "}
+          {canWrite && (
+            <Link
+              className="button primary"
+              href={`/modules/justech-sales/payments?new=1&subscription=${record.id}`}
+            >
+              Add payment
+            </Link>
+          )}
+        </section>
       )}
       {!editing && canDelete && (
         <SalesDelete section={section} record={record} kind={kind} />
