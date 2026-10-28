@@ -164,3 +164,19 @@ export function safeReturnPath(value: unknown) {
     ? value
     : "/";
 }
+
+export function isPageAllowed(
+  href: string,
+  access: { modules?: string[]; team: boolean; supplier: boolean },
+) {
+  if (href === "/team") return access.team;
+  if (href.startsWith("/finance/")) return access.supplier;
+  if (!access.modules) return true;
+  let scope = "";
+  if (href.startsWith("/directory")) scope = "directory";
+  else if (href.startsWith("/modules/justech-"))
+    scope = href.split("/")[2].replace("justech-", "");
+  else if (href.startsWith("/modules/alfikr-")) scope = href.split("/")[2];
+  else if (href.startsWith("/modules/workspace/")) scope = href.split("/")[3];
+  return !scope || access.modules.includes(scope);
+}

@@ -150,8 +150,11 @@ export function DepartmentForm({
       {record && (
         <input name="revision" type="hidden" value={record.revision} />
       )}
+      {section.slug === "issues" && (
+        <input type="hidden" name="project_id" value={get("project_id")} />
+      )}
       <div className="form-grid">
-        {section.fields.map((f) =>
+        {[...section.fields, ...(section.extraFields ?? [])].map((f) =>
           f.type === "reference" ? (
             <ReferencePicker
               key={f.key}
@@ -259,11 +262,17 @@ export function DepartmentForm({
       <div className="form-actions">
         <Link
           className="button"
-          href={modulePath(
-            section.department,
-            section.slug,
-            record ? { record: record.id } : {},
-          )}
+          href={
+            section.slug === "issues" && !record
+              ? modulePath("platform", "projects", {
+                  record: value(source, "project_id"),
+                })
+              : modulePath(
+                  section.department,
+                  section.slug,
+                  record ? { record: record.id } : {},
+                )
+          }
         >
           Cancel
         </Link>

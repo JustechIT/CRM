@@ -1,12 +1,12 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { invoiceAccess } from "@/lib/finance/access";
+import { superAdmin } from "@/lib/team/access";
 import { idSchema } from "@/lib/sales/validation";
 export async function changeInvoiceAccess(
   _: { error: string },
   form: FormData,
 ) {
-  const access = await invoiceAccess(true);
+  const access = await superAdmin();
   if (!access)
     return {
       error:

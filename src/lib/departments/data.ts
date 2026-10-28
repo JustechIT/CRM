@@ -41,6 +41,22 @@ export async function list(access: Access, section: Section, params: Params) {
     : field.key;
   let q = access.db.from(section.view).select("*", { count: "exact" });
   if (f.q) q = q.ilike("search_text", `%${f.q.replace(/[\\%_]/g, "\\$&")}%`);
+  const employee = param(params, "employee");
+  const assignment = section.fields
+    .concat(section.extraFields ?? [])
+    .find((f) => ["assigned_to", "responsible_id"].includes(f.key))?.key;
+  if (assignment && id.safeParse(employee).success)
+    q = q.eq(assignment, employee);
+  if (assignment && param(params, "mine") === "1")
+    q = q.eq(assignment, access.profile.id);
+  if (
+    section.fields.some((f) => f.key === "priority") &&
+    ["Low", "Medium", "High", "Urgent"].includes(param(params, "priority"))
+  )
+    q = q.eq("priority", param(params, "priority"));
+  if (section.slug === "priorities" && param(params, "department"))
+    q = q.eq("team_department", param(params, "department"));
+  if (section.slug === "issues" && f.project) q = q.eq("project_id", f.project);
   if (f.status) q = q.eq(section.statusKey, f.status);
   const dateField = section.fields.find((c) => c.type === "date")?.key;
   const dateKey = section.slug === "follow-ups" ? "follow_up_date" : dateField;

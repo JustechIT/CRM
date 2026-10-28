@@ -1824,3 +1824,36 @@ textarea {
   color: #9a3412;
   background: #ffedd5;
 }
+
+.workspace-overdue td {
+  background: color-mix(in srgb, #f97316 9%, transparent);
+}
+.workspace-overdue .badge {
+  color: #9a3412;
+  background: #ffedd5;
+}
+.workspace-upcoming td {
+  background: color-mix(in srgb, #22c55e 7%, transparent);
+}
+.project-progress {
+  margin-top: 1.5rem;
+  max-width: 32rem;
+}
+.project-progress progress {
+  display: block;
+  width: 100%;
+  accent-color: var(--accent, #13836c);
+  height: 0.7rem;
+  margin-top: 0.5rem;
+}
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.checkbox-label input[type="checkbox"],
+.table-wrap input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #13836c;
+}

@@ -1,4 +1,11 @@
-import type { Department, Section, Indicator, Params } from "./types";
+import { workspaceSections, isWorkspaceScope } from "@/lib/workspace/config";
+import type {
+  ModuleScope,
+  Department,
+  Section,
+  Indicator,
+  Params,
+} from "./types";
 import { marketingSections, marketingIndicators } from "./marketing";
 import { operationsSections, operationsIndicators } from "./operations";
 import { trainingSections, trainingIndicators } from "./training";
@@ -25,15 +32,31 @@ export const indicators: Record<Department, Indicator[]> = {
 export function isDepartment(value: unknown): value is Department {
   return departments.includes(value as Department);
 }
-export function getSection(department: Department, slug: string) {
-  return sections.find((s) => s.department === department && s.slug === slug);
+export function isModuleScope(v: unknown): v is ModuleScope {
+  return isDepartment(v) || isWorkspaceScope(v);
+}
+export function getSection(department: ModuleScope, slug: string) {
+  return [...sections, ...workspaceSections].find(
+    (s) => s.department === department && s.slug === slug,
+  );
 }
 export function modulePath(
-  department: Department,
+  department: ModuleScope,
   slug = "overview",
   params: Record<string, string> = {},
 ) {
   const query = new URLSearchParams(params);
+  if (isWorkspaceScope(department)) {
+    if (department === "events") {
+      if (slug === "conferences") query.set("section", "conferences");
+      return `/modules/workspace/events${query.size ? "?" + query : ""}`;
+    }
+    const path =
+      department === "platform" && slug === "issues"
+        ? "platform/issues"
+        : department;
+    return `/modules/workspace/${path}${query.size ? "?" + query : ""}`;
+  }
   return `/modules/justech-${department}/${slug}${query.size ? "?" + query : ""}`;
 }
 export function param(params: Params, key: string) {

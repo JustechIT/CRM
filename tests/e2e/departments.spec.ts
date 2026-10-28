@@ -214,13 +214,10 @@ test("Each department rejects unauthorized lookups and forged POSTs while stayin
     ).toBe(200);
   }
 });
-test("Al-Fikr and Workspace sections remain untouched starter pages", async ({
-  page,
-}) => {
+test("Al-Fikr sections remain untouched starter pages", async ({ page }) => {
   for (const path of [
     "/modules/alfikr-sales/overview",
     "/modules/alfikr-marketing/overview",
-    "/modules/workspace/priorities",
   ]) {
     await page.goto(path);
     await expect(

@@ -34,7 +34,7 @@ export async function GET(_: NextRequest, ctx: Context) {
 export async function POST(request: NextRequest, ctx: Context) {
   if (!sameOrigin(request))
     return reply({ error: "Invalid request origin." }, 403);
-  const access = await invoiceAccess();
+  const access = await invoiceAccess(false, true);
   if (!access) return reply({ error: "Private invoice access required." }, 403);
   const { id } = await ctx.params;
   if (!idSchema.safeParse(id).success)

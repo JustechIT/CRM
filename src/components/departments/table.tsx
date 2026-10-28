@@ -8,6 +8,9 @@ import type {
   RecordRow,
   Params,
 } from "@/lib/departments/types";
+import { ReferencePicker } from "./reference-picker";
+import { isWorkspaceScope } from "@/lib/workspace/config";
+import { utcDay, addDays } from "@/lib/sales/metrics";
 import { filters } from "@/lib/departments/data";
 export function url(
   section: Section,
@@ -79,9 +82,11 @@ export function FieldValue({
 export function FilterForm({
   section,
   params,
+  contextRecord,
 }: {
   section: Section;
   params: Params;
+  contextRecord?: string;
 }) {
   const f = filters(section, params);
   const status = section.fields.find(
@@ -94,6 +99,58 @@ export function FilterForm({
       method="get"
       aria-label={`Filter ${section.title}`}
     >
+      {contextRecord && (
+        <input type="hidden" name="record" value={contextRecord} />
+      )}
+      {section.slug === "conferences" && (
+        <input type="hidden" name="section" value="conferences" />
+      )}
+      {isWorkspaceScope(section.department) && (
+        <>
+          <ReferencePicker
+            name="employee"
+            label="Employee"
+            entity="employees"
+            department={section.department}
+            initialId={param(params, "employee")}
+            initialLabel={param(params, "employee_label")}
+            required={false}
+            disabled={false}
+          />
+          {section.slug === "priorities" && (
+            <ReferencePicker
+              name="department"
+              label="Department"
+              entity="departments"
+              department="priorities"
+              initialId={param(params, "department")}
+              initialLabel={param(params, "department_label")}
+              required={false}
+              disabled={false}
+            />
+          )}
+          {section.fields.some((f) => f.key === "priority") && (
+            <label>
+              Priority
+              <select name="priority" defaultValue={param(params, "priority")}>
+                <option value="">All</option>
+                {["Low", "Medium", "High", "Urgent"].map((p) => (
+                  <option key={p}>{p}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              name="mine"
+              value="1"
+              defaultChecked={param(params, "mine") === "1"}
+            />
+            {section.slug === "priorities" ? "My Priorities" : "Assigned to me"}
+          </label>
+        </>
+      )}
       <label className="sales-search">
         Search
         <input
@@ -205,7 +262,16 @@ export function DepartmentTable({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.id}>
+              <tr
+                key={row.id}
+                className={
+                  rowHint(section, row) === "Overdue"
+                    ? "workspace-overdue"
+                    : rowHint(section, row) === "Upcoming"
+                      ? "workspace-upcoming"
+                      : undefined
+                }
+              >
                 {section.fields.map((field, i) => (
                   <td key={field.key}>
                     {i === 0 ? (
@@ -220,6 +286,14 @@ export function DepartmentTable({
                       >
                         <FieldValue field={field} record={row} />
                         <ArrowUpRight size={13} />
+                        {rowHint(section, row) && (
+                          <span className="badge">{rowHint(section, row)}</span>
+                        )}
+                        {section.table === "it_projects" && (
+                          <span className="muted">
+                            {value(row, "progress") || "0"}% completed
+                          </span>
+                        )}
                       </Link>
                     ) : (
                       <FieldValue field={field} record={row} />
@@ -242,7 +316,12 @@ export function DepartmentTable({
           action={
             <Link
               className="button"
-              href={modulePath(section.department, section.slug, { new: "1" })}
+              href={modulePath(section.department, section.slug, {
+                new: "1",
+                ...(section.slug === "issues"
+                  ? { project: param(params, "project") }
+                  : {}),
+              })}
             >
               Create {section.singular}
             </Link>
@@ -290,4 +369,29 @@ export function Pagination({
       </div>
     </div>
   );
+}
+
+function rowHint(section: Section, row: RecordRow) {
+  const today = utcDay();
+  if (
+    section.slug === "priorities" &&
+    value(row, "due_at").slice(0, 10) < today &&
+    row.status !== "Completed"
+  )
+    return "Overdue";
+  if (
+    section.slug === "conferences" &&
+    value(row, "follow_up_date") &&
+    value(row, "follow_up_date") < today &&
+    value(row, "status") !== "Closed"
+  )
+    return "Overdue";
+  if (
+    section.table === "workspace_events" &&
+    value(row, "event_date") >= today &&
+    value(row, "event_date") <= addDays(today, 30) &&
+    !["Completed", "Cancelled"].includes(value(row, "status"))
+  )
+    return "Upcoming";
+  return "";
 }

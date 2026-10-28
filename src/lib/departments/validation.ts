@@ -4,10 +4,21 @@ export const id = z.uuid("Choose an existing record from the list.");
 export const revision = z.coerce.number().int().min(1).max(2147483647);
 export function validate(section: Section, input: unknown) {
   const shape: Record<string, z.ZodType> = {};
-  for (const f of section.fields) {
+  for (const f of [...section.fields, ...(section.extraFields ?? [])]) {
     let schema: z.ZodType;
     if (f.type === "project" || f.type === "party") continue;
-    if (f.type === "reference") schema = id;
+    if (f.type === "reference")
+      schema =
+        f.reference === "departments"
+          ? z.enum([
+              "sales",
+              "marketing",
+              "operations",
+              "training",
+              "it",
+              "management",
+            ])
+          : id;
     else if (f.type === "date") schema = z.iso.date();
     else if (f.type === "money")
       schema = z
@@ -44,7 +55,9 @@ export function validate(section: Section, input: unknown) {
       ? schema
       : z
           .union([z.literal(""), schema])
-          .transform((v) => (v === "" ? null : v))
+          .transform((v) =>
+            v === "" ? (["text", "textarea"].includes(f.type) ? "" : null) : v,
+          )
           .optional();
   }
   if (section.fields.some((f) => f.type === "project")) {
@@ -55,9 +68,30 @@ export function validate(section: Section, input: unknown) {
     shape.party_type = z.enum(["accounts", "contacts"]);
     shape.party_id = id;
   }
+  if (section.slug === "issues") shape.project_id = id;
   return z
     .object(shape)
     .superRefine((v, ctx) => {
+      if (
+        section.table === "it_projects" &&
+        String(v.deadline) < String(v.start_date)
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["deadline"],
+          message: "Deadline cannot precede Start Date.",
+        });
+      if (
+        section.slug === "conferences" &&
+        v.follow_up_date &&
+        v.date_contacted &&
+        String(v.follow_up_date) < String(v.date_contacted)
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["follow_up_date"],
+          message: "Follow-up Date cannot precede Date Contacted.",
+        });
       if (
         section.slug === "campaigns" &&
         String(v.end_date) < String(v.start_date)
@@ -89,7 +123,10 @@ export function validate(section: Section, input: unknown) {
     })
     .transform((v) => {
       const result: Record<string, unknown> = { ...v };
-      if (section.slug === "tasks" && typeof result.due_at === "string")
+      if (
+        ["tasks", "priorities"].includes(section.slug) &&
+        typeof result.due_at === "string"
+      )
         result.due_at += "T00:00:00Z";
       if (section.fields.some((f) => f.type === "party")) {
         result.account_id = v.party_type === "accounts" ? v.party_id : null;

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 async function save(request: NextRequest, editing: boolean) {
   if (!sameOrigin(request))
     return reply({ error: "Invalid request origin." }, 403);
-  const access = await invoiceAccess();
+  const access = await invoiceAccess(false, true);
   if (!access) return reply({ error: "Private invoice access required." }, 403);
   const form = await request.formData();
   const parsed = invoiceSchema.safeParse(Object.fromEntries(form));
@@ -84,7 +84,7 @@ export async function PATCH(r: NextRequest) {
 export async function DELETE(request: NextRequest) {
   if (!sameOrigin(request))
     return reply({ error: "Invalid request origin." }, 403);
-  const access = await invoiceAccess();
+  const access = await invoiceAccess(false, true);
   if (!access) return reply({ error: "Private invoice access required." }, 403);
   const data = await request.json();
   const id = idSchema.safeParse(data.id),

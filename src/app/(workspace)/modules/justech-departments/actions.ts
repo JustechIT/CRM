@@ -2,7 +2,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { authorized } from "@/lib/directory";
-import { getSection, isDepartment, modulePath } from "@/lib/departments/config";
+import {
+  getSection,
+  isModuleScope,
+  modulePath,
+} from "@/lib/departments/config";
 import { id as uuid, revision, validate } from "@/lib/departments/validation";
 export type State = { error: string; fields?: Record<string, string> };
 function fail(error: string, form: FormData): State {
@@ -23,7 +27,7 @@ export async function saveDepartment(
   _: State,
   form: FormData,
 ): Promise<State> {
-  if (!isDepartment(dept)) return fail("Invalid department.", form);
+  if (!isModuleScope(dept)) return fail("Invalid department.", form);
   const section = getSection(dept, slug);
   if (!section || (recordId && !uuid.safeParse(recordId).success))
     return fail("Invalid record.", form);
@@ -69,7 +73,8 @@ export async function saveDepartment(
       .update(data)
       .eq("id", recordId)
       .eq("revision", v.data);
-    if (section.scope) q = q.eq("department", section.scope);
+    if (section.scope)
+      q = q.eq(section.scopeField ?? "department", section.scope);
     response = await q.select("id").maybeSingle();
   } else
     response = await access.db
@@ -77,7 +82,9 @@ export async function saveDepartment(
       .insert({
         ...data,
         owner_id: access.profile.id,
-        ...(section.scope ? { department: section.scope } : {}),
+        ...(section.scope
+          ? { [section.scopeField ?? "department"]: section.scope }
+          : {}),
       })
       .select("id")
       .single();
@@ -85,7 +92,9 @@ export async function saveDepartment(
     const code = response.error.code;
     return fail(
       code === "23505"
-        ? section.slug === "caution" ? "This LCID already exists. Open the existing Caution record instead." : "This participant/session or history entry already exists. Open the existing record instead."
+        ? section.slug === "caution"
+          ? "This LCID already exists. Open the existing Caution record instead."
+          : "This participant/session or history entry already exists. Open the existing record instead."
         : code === "23503"
           ? "A linked record is no longer available. Select an existing record and try again."
           : code === "23514"
@@ -105,7 +114,15 @@ export async function saveDepartment(
     );
   revalidatePath(modulePath(dept, slug));
   revalidatePath(modulePath(dept));
-  redirect(modulePath(dept, slug, { record: response.data.id, saved: "1" }));
+  redirect(
+    modulePath(dept, slug, {
+      record: response.data.id,
+      saved: "1",
+      ...(slug === "issues" && typeof data.project_id === "string"
+        ? { project: data.project_id }
+        : {}),
+    }),
+  );
 }
 export async function deleteDepartment(
   dept: string,
@@ -114,7 +131,7 @@ export async function deleteDepartment(
   _: State,
   form: FormData,
 ): Promise<State> {
-  if (!isDepartment(dept) || !uuid.safeParse(recordId).success)
+  if (!isModuleScope(dept) || !uuid.safeParse(recordId).success)
     return { error: "Invalid record." };
   const section = getSection(dept, slug);
   if (!section) return { error: "Invalid section." };
@@ -130,8 +147,11 @@ export async function deleteDepartment(
     .delete()
     .eq("id", recordId)
     .eq("revision", v.data);
-  if (section.scope) q = q.eq("department", section.scope);
-  const r = await q.select("id").maybeSingle();
+  if (section.scope)
+    q = q.eq(section.scopeField ?? "department", section.scope);
+  const r = await q
+    .select(slug === "issues" ? "id,project_id" : "id")
+    .maybeSingle();
   if (r.error)
     return {
       error:
@@ -144,5 +164,11 @@ export async function deleteDepartment(
     };
   revalidatePath(modulePath(dept, slug));
   revalidatePath(modulePath(dept));
+  if (slug === "issues")
+    redirect(
+      modulePath("platform", "projects", {
+        record: (r.data as unknown as { project_id: string }).project_id,
+      }),
+    );
   redirect(modulePath(dept, slug));
 }

@@ -17,7 +17,15 @@ export async function proxy(request: NextRequest) {
     request.method === "POST" &&
     (request.nextUrl.pathname.startsWith("/finance/") ||
       request.nextUrl.pathname === "/team");
-  const mutationScope = salesMutation ? "sales" : departmentMutation;
+  const workspaceMutation =
+    request.method === "POST"
+      ? request.nextUrl.pathname.match(
+          /^\/modules\/workspace\/(priorities|platform|events)(?:\/|$)/,
+        )?.[1]
+      : undefined;
+  const mutationScope = salesMutation
+    ? "sales"
+    : (departmentMutation ?? workspaceMutation);
   const scopeLabel = salesMutation ? "Sales" : "Department";
   function deny(status: number, message: string) {
     const denied = NextResponse.json(
@@ -50,10 +58,15 @@ export async function proxy(request: NextRequest) {
   } = await db.auth.getUser();
   if (privateMutation) {
     if (!user) return deny(401, "Private access required.");
-    const r = await db.rpc("supplier_invoice_allowed", {
-      manage: request.nextUrl.pathname === "/team",
-    });
-    if (r.error || r.data !== true)
+    const r =
+      request.nextUrl.pathname === "/team"
+        ? await db.rpc("team_admin_activation_ready")
+        : await db.rpc("supplier_invoice_allowed", { manage: false });
+    const admin =
+      request.nextUrl.pathname === "/team"
+        ? await db.rpc("is_super_admin")
+        : null;
+    if ((r.error || r.data !== true) && (admin?.error || admin?.data !== true))
       return deny(403, "Private access required.");
   }
   if (mutationScope) {

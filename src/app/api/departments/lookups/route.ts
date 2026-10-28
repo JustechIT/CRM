@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authorized } from "@/lib/directory";
-import { isDepartment } from "@/lib/departments/config";
+import { isModuleScope } from "@/lib/departments/config";
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams,
     dept = params.get("department"),
     entity = params.get("entity");
-  if (!isDepartment(dept))
+  if (!isModuleScope(dept))
     return NextResponse.json({ error: "Invalid department." }, { status: 400 });
   const access = await authorized(dept + ".read");
   if (!access)
@@ -14,6 +14,9 @@ export async function GET(request: NextRequest) {
       { status: 401 },
     );
   const allowed: Record<string, string[]> = {
+    priorities: ["employees", "departments"],
+    platform: ["employees", "itprojects"],
+    events: ["employees", "accounts", "contacts"],
     marketing: ["employees", "products"],
     operations: ["employees", "projects", "accounts", "contacts", "products"],
     training: ["employees", "products", "accounts", "sessions"],
@@ -21,6 +24,8 @@ export async function GET(request: NextRequest) {
   if (!entity || !allowed[dept].includes(entity))
     return NextResponse.json({ error: "Invalid reference." }, { status: 400 });
   const mapping: Record<string, { table: string; column: string }> = {
+    departments: { table: "departments", column: "name" },
+    itprojects: { table: "it_projects", column: "name" },
     employees: { table: "employee_profiles", column: "full_name" },
     products: { table: "products", column: "name" },
     accounts: { table: "accounts", column: "name" },

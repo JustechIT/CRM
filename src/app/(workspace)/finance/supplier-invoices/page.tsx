@@ -17,6 +17,7 @@ export default async function Invoices({
 }) {
   const access = await invoiceAccess();
   if (!access) notFound();
+  let canWrite = !!(await invoiceAccess(false, true));
   const p = await searchParams;
   const param = (k: string) =>
     typeof p[k] === "string" ? (p[k] as string) : "";
@@ -39,6 +40,14 @@ export default async function Invoices({
     if (!r.data) notFound();
     record = r.data as Invoice;
   }
+  if (record) {
+    const own = await access.db.rpc("team_record_write_allowed", {
+      assignee: null,
+      creator: (record as unknown as { owner_id: string }).owner_id,
+    });
+    canWrite = canWrite && own.data === true;
+  }
+  if ((param("new") === "1" || param("edit") === "1") && !canWrite) notFound();
   if (param("new") === "1" || (record && param("edit") === "1"))
     return (
       <>
@@ -63,12 +72,14 @@ export default async function Invoices({
           <Link className="button" href={invoiceBase}>
             Back to list
           </Link>
-          <Link
-            className="button primary"
-            href={`${invoiceBase}?record=${record.id}&edit=1`}
-          >
-            Edit invoice
-          </Link>
+          {canWrite && (
+            <Link
+              className="button primary"
+              href={`${invoiceBase}?record=${record.id}&edit=1`}
+            >
+              Edit invoice
+            </Link>
+          )}
         </PageHeader>
         <section className="panel sales-record-detail">
           <dl>
@@ -88,8 +99,8 @@ export default async function Invoices({
               ))}
           </dl>
         </section>
-        <InvoiceFiles record={record} />
-        <InvoiceDelete record={record} />
+        <InvoiceFiles record={record} canWrite={canWrite} />
+        {canWrite && <InvoiceDelete record={record} />}
       </>
     );
   const q = param("q").trim().slice(0, 100),
@@ -137,9 +148,11 @@ export default async function Invoices({
         title="Supplier Invoices"
         description="Private supplier invoices and supporting documents."
       >
-        <Link className="button primary" href={`${invoiceBase}?new=1`}>
-          New supplier invoice
-        </Link>
+        {canWrite && (
+          <Link className="button primary" href={`${invoiceBase}?new=1`}>
+            New supplier invoice
+          </Link>
+        )}
       </PageHeader>
       <section className="panel">
         <form className="sales-filters" method="get">

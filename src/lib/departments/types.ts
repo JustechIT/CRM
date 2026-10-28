@@ -1,6 +1,14 @@
 export type Department = "marketing" | "operations" | "training";
+export type ModuleScope = Department | "priorities" | "platform" | "events";
 export type Reference =
-  "employees" | "products" | "accounts" | "contacts" | "projects" | "sessions";
+  | "employees"
+  | "products"
+  | "accounts"
+  | "contacts"
+  | "projects"
+  | "sessions"
+  | "departments"
+  | "itprojects";
 export type Field = {
   key: string;
   label: string;
@@ -23,7 +31,7 @@ export type Field = {
   max?: number;
 };
 export type Section = {
-  department: Department;
+  department: ModuleScope;
   slug: string;
   title: string;
   singular: string;
@@ -33,6 +41,8 @@ export type Section = {
   defaultSort: string;
   statusKey: string;
   scope?: string;
+  scopeField?: string;
+  extraFields?: Field[];
   sheet: string;
 };
 export type Indicator = {

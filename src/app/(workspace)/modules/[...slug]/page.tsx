@@ -1,3 +1,6 @@
+import { authorized } from "@/lib/directory";
+import { isConfigured } from "@/lib/supabase";
+import { WorkspacePage } from "@/components/workspace/page";
 import { DepartmentPage } from "@/components/departments/page";
 import { isDepartment } from "@/lib/departments/config";
 import { SalesPage } from "@/components/sales/page";
@@ -12,6 +15,26 @@ export default async function Module({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { slug } = await params;
+  if (
+    slug[0] === "workspace" &&
+    ["priorities", "platform", "events"].includes(slug[1]) &&
+    slug.length >= 2 &&
+    slug.length <= 3
+  ) {
+    const q = await searchParams;
+    const scope = slug[1] as "priorities" | "platform" | "events";
+    const section =
+      scope === "platform"
+        ? (slug[2] ?? "projects")
+        : scope === "events"
+          ? q.section === "conferences"
+            ? "conferences"
+            : "events"
+          : "priorities";
+    if (slug.length === 3 && !(scope === "platform" && slug[2] === "issues"))
+      notFound();
+    return <WorkspacePage scope={scope} slug={section} params={q} />;
+  }
   if (slug[0] === "justech-sales")
     return <SalesPage slug={slug.slice(1)} params={await searchParams} />;
   const department = slug[0]?.replace(/^justech-/, "");
@@ -23,6 +46,12 @@ export default async function Module({
         params={await searchParams}
       />
     );
+  if (
+    slug[0]?.startsWith("alfikr-") &&
+    isConfigured() &&
+    !(await authorized(slug[0] + ".read"))
+  )
+    notFound();
   const path = "/modules/" + slug.join("/");
   const page = allPages.find((p) => p.href === path);
   if (!page) notFound();

@@ -15,16 +15,10 @@ export function ReferencePicker({
 }: {
   name: string;
   label: string;
-  entity:
-    | "accounts"
-    | "products"
-    | "employees"
-    | "projects"
-    | "sessions"
-    | "contacts";
+  entity: import("@/lib/departments/types").Reference;
   initialId?: string;
   initialLabel?: string;
-  department: "marketing" | "operations" | "training";
+  department: import("@/lib/departments/types").ModuleScope;
   purpose?: string;
   required?: boolean;
   disabled: boolean;

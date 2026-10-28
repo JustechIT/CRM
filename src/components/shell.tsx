@@ -38,6 +38,7 @@ import {
   allPages,
   pageTitle,
   activeDepartment,
+  isPageAllowed,
 } from "@/lib/navigation";
 import { signOut } from "@/app/login/actions";
 const icons: Record<string, LucideIcon> = {
@@ -92,19 +93,28 @@ export function Shell({
   name,
   preview,
   supplierInvoices = false,
+  allowedModules,
+  teamManagement = true,
 }: {
   children: React.ReactNode;
   name: string;
   preview: boolean;
   supplierInvoices?: boolean;
+  allowedModules?: string[];
+  teamManagement?: boolean;
 }) {
   const pathname = usePathname();
-  const visibleNavigation = navigation.filter(
-    (s) => s.label !== "Finance" || supplierInvoices,
-  );
-  const visiblePages = allPages.filter(
-    (p) => !p.href.startsWith("/finance/") || supplierInvoices,
-  );
+  const allowed = (href: string) =>
+    isPageAllowed(href, {
+      modules: allowedModules,
+      team: teamManagement,
+      supplier: supplierInvoices,
+    });
+  const visibleNavigation = navigation
+    .map((g) => ({ ...g, items: g.items.filter((i) => allowed(i.href)) }))
+    .filter((g) => g.items.length);
+  const visibleBottom = bottomNavigation.filter((i) => allowed(i.href));
+  const visiblePages = allPages.filter((p) => allowed(p.href));
   const [collapsed, setCollapsed] = usePreference(
     "justech.sidebar",
     "expanded",
@@ -315,7 +325,7 @@ export function Shell({
         ))}
       </nav>
       <nav aria-label="Personal navigation" className="bottom-nav">
-        {bottomNavigation.map((item) => {
+        {visibleBottom.map((item) => {
           const Icon = icons[item.icon];
           return (
             <Link

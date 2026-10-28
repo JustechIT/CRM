@@ -93,7 +93,13 @@ export function InvoiceForm({ record }: { record?: Invoice }) {
     </form>
   );
 }
-export function InvoiceFiles({ record }: { record: Invoice }) {
+export function InvoiceFiles({
+  record,
+  canWrite = true,
+}: {
+  record: Invoice;
+  canWrite?: boolean;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -112,50 +118,52 @@ export function InvoiceFiles({ record }: { record: Invoice }) {
       ) : (
         <p className="muted">No file attached.</p>
       )}
-      <form
-        onSubmit={async (e) => {
-          e.preventDefault();
-          setBusy(true);
-          setError("");
-          const form = new FormData(e.currentTarget);
-          form.set("revision", String(record.revision));
-          try {
-            const r = await fetch(
-              `/api/finance/supplier-invoices/${record.id}/file`,
-              { method: "POST", body: form },
-            );
-            const d = await r.json();
-            if (!r.ok) throw Error(d.error);
-            router.refresh();
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "Upload failed.");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <label>
-          {record.file_name ? "Replace file" : "Upload file"}
-          <input
-            type="file"
-            name="file"
-            accept="application/pdf,image/png,image/jpeg"
-            required
-          />
-        </label>
-        <p className="muted">
-          PDF, PNG or JPEG, up to 10 MB. Downloads require current
-          authorization.
-        </p>
-        {error && (
-          <p role="alert" className="form-error">
-            {error}
+      {canWrite && (
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError("");
+            const form = new FormData(e.currentTarget);
+            form.set("revision", String(record.revision));
+            try {
+              const r = await fetch(
+                `/api/finance/supplier-invoices/${record.id}/file`,
+                { method: "POST", body: form },
+              );
+              const d = await r.json();
+              if (!r.ok) throw Error(d.error);
+              router.refresh();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "Upload failed.");
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <label>
+            {record.file_name ? "Replace file" : "Upload file"}
+            <input
+              type="file"
+              name="file"
+              accept="application/pdf,image/png,image/jpeg"
+              required
+            />
+          </label>
+          <p className="muted">
+            PDF, PNG or JPEG, up to 10 MB. Downloads require current
+            authorization.
           </p>
-        )}
-        <button className="button" disabled={busy}>
-          {busy ? "Uploading…" : "Upload privately"}
-        </button>
-      </form>
+          {error && (
+            <p role="alert" className="form-error">
+              {error}
+            </p>
+          )}
+          <button className="button" disabled={busy}>
+            {busy ? "Uploading…" : "Upload privately"}
+          </button>
+        </form>
+      )}
     </section>
   );
 }
