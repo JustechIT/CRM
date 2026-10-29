@@ -69,7 +69,10 @@ export function value(
   record: Record<string, unknown> | undefined,
   key: string,
 ) {
-  const v = record?.[key];
+  const v =
+    key === "organization_name"
+      ? record?.[key] || record?.account_id_label
+      : record?.[key];
   return typeof v === "string" || typeof v === "number" ? String(v) : "";
 }
 export function recordLabel(section: Section, record: Record<string, unknown>) {

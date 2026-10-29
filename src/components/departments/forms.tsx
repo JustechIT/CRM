@@ -262,8 +262,10 @@ export function DepartmentForm({
         </p>
       )}
       <p className="department-help">
-        * Required fields. Reference choices come from existing records; no
-        duplicate organizations, employees or products are created.
+        {section.department === "alfikr-sales" &&
+        section.slug === "opportunities"
+          ? "* Required fields. Type the organization name directly; products come from your existing catalog."
+          : "* Required fields. Reference choices come from existing records; no duplicate organizations, employees or products are created."}
       </p>
       <div className="form-actions">
         <Link

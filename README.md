@@ -18,7 +18,7 @@ The project stores npm's cache in the ignored `.npm-cache` directory so installa
 ## Supabase setup
 
 1. Create a Supabase project. Disable public registration in **Authentication → Providers / Sign In settings**. Configure your application URL and allowed redirect URLs for each deployment.
-2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0014). For an existing installation with 0001–0005 applied, apply 0006–0014 in order. If only 0001/0002 are applied, continue from 0003 through 0014. Supplier Invoice access is granted separately using the explicitly approved-account script in the update guide. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
+2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0015). For an existing installation with 0001–0005 applied, apply 0006–0015 in order. If only 0001/0002 are applied, continue from 0003 through 0015. Supplier Invoice access is granted separately using the explicitly approved-account script in the update guide. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
 3. Copy `.env.example` to `.env.local` and set:
    - `NEXT_PUBLIC_SUPABASE_URL`: project HTTPS URL.
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: project's public publishable key. A public anonymous key also works under this variable name for older projects.
@@ -149,3 +149,7 @@ See [the invitation resend update](docs/invitation-resend-update.md). Existing i
 ## Forgotten passwords
 
 See [password recovery setup](docs/password-recovery.md). Existing authenticated identities keep their accounts and permissions. Add the production `/reset-password` redirect URL in Supabase; no SQL migration is required.
+
+## Opportunity Organization and readability update
+
+See [the small opportunity/readability update](docs/opportunity-readability-update.md). Apply only migration `0015_opportunity_organization_text.sql` to an installation already through 0014. The text Organization field is limited to Justech/Al-Fikr opportunities; saved directory relationships and all other module workflows are retained.

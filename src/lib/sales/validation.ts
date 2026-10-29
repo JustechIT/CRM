@@ -28,7 +28,8 @@ const references = {
 const schemas = {
   opportunities: z
     .object({
-      ...references,
+      organization_name: requiredText(),
+      product_id: references.product_id,
       name: requiredText(200),
       date: dateValue,
       due_date: optionalDate,

@@ -91,6 +91,12 @@ export function RecordValue({
   record: SalesRecord;
   field: { key: string; type: string };
 }) {
+  if (field.key === "organization_name")
+    return (
+      <>
+        {textValue(record, "organization_name") || record.account_name || "—"}
+      </>
+    );
   if (field.key === "account_id")
     return <>{record.account_name ?? "Unavailable institution"}</>;
   if (field.key === "product_id")

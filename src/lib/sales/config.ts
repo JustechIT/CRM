@@ -79,9 +79,9 @@ export const salesDefinitions: Record<
         required: true,
       },
       {
-        key: "account_id",
+        key: "organization_name",
         label: "Organization",
-        type: "account",
+        type: "text",
         required: true,
       },
       { key: "product_id", label: "Product", type: "product", required: true },

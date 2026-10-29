@@ -1911,3 +1911,59 @@ textarea {
   width: 100%;
   max-width: 360px;
 }
+
+/* Small readability refinements: preserve layout, routes and interaction rules. */
+:root {
+  --muted: #556475;
+  --border: #dce3e9;
+}
+:root[data-theme="dark"] {
+  --muted: #afbdcd;
+  --border: #3a4655;
+}
+.nav-item {
+  font-size: 13px;
+}
+.button {
+  font-size: 13px;
+}
+label {
+  font-size: 13px;
+  font-weight: 500;
+}
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  font-size: 14px;
+  line-height: 1.5;
+}
+th,
+.sales-table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+td,
+.sales-table td {
+  font-size: 14px;
+  line-height: 1.55;
+}
+.sales-form label small,
+.notice p,
+.panel-heading p {
+  font-size: 12px;
+  line-height: 1.65;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.form-grid > label {
+  align-content: start;
+}

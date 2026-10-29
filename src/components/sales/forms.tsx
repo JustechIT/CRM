@@ -24,7 +24,10 @@ function value(
   key: string,
   fallback = "",
 ) {
-  const v = record?.[key];
+  const v =
+    key === "organization_name"
+      ? record?.[key] || record?.account_name
+      : record?.[key];
   return typeof v === "string" || typeof v === "number" ? String(v) : fallback;
 }
 export function SalesForm({
@@ -223,7 +226,9 @@ export function SalesForm({
       )}
       <div className="sales-form-help">
         <span>
-          * Required fields. Institutions come from Accounts & Contacts.
+          {section === "opportunities"
+            ? "* Required fields. Type the organization name directly; products come from your existing catalog."
+            : "* Required fields. Institutions come from Accounts & Contacts."}
         </span>
         <Link
           href={`${salesBase}/subscriptions?catalog=1`}

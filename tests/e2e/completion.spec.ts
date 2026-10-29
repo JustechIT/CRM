@@ -218,3 +218,23 @@ test("Password recovery is reachable from login and rejects expired or unverifie
   await expect(page.getByRole("heading", { name: "Reset your password", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Save new password", exact: true })).toBeDisabled();
 });
+
+test("Justech and Al-Fikr opportunities use a normal Organization text field while subscription customers stay linked", async ({ page }) => {
+  for (const scope of ["justech-sales", "alfikr-sales"]) {
+    await page.goto(`/modules/${scope}/opportunities?new=1`);
+    const organization = page.getByRole("textbox", { name: "Organization", exact: false });
+    await expect(organization).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Organization", exact: false })).toHaveCount(0);
+    await organization.fill("Université d'Été — Tunis");
+    await expect(organization).toHaveValue("Université d'Été — Tunis");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (scope === "justech-sales") {
+      await page.screenshot({ path: `/tmp/justech-readability-${test.info().project.name}.png`, fullPage: true });
+      await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; });
+      await page.screenshot({ path: `/tmp/justech-readability-dark-${test.info().project.name}.png`, fullPage: true });
+      await page.evaluate(() => { document.documentElement.dataset.theme = "light"; });
+    }
+    await page.goto(`/modules/${scope}/subscriptions?new=1`);
+    await expect(page.getByRole("combobox", { name: "Customer", exact: false })).toBeVisible();
+  }
+});
