@@ -168,3 +168,13 @@ test("New API endpoints reject unauthorized profile, preference, notification, p
     ).toBe(401);
   expect((await page.request.get("/")).status()).toBe(200);
 });
+
+test("Default invitation callback renders without dropping browser-only tokens", async ({ page }) => {
+  await page.goto("/auth/confirm#access_token=synthetic-test-only&refresh_token=synthetic-test-only&type=invite");
+  await expect(page.getByRole("heading", { name: "Join your Justech workspace" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Accept invitation", exact: true })).toBeDisabled();
+  await expect(page).toHaveURL(/\/auth\/confirm$/);
+  await page.goto("/auth/confirm#error=access_denied&error_code=otp_expired");
+  await expect(page.locator(".form-error")).toContainText("expired or was already used");
+  await expect(page).toHaveURL(/\/auth\/confirm$/);
+});

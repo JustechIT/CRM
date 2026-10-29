@@ -32,6 +32,8 @@ You reported that the invitation key is not set. No live test email has been sen
 7. Select **Check invitation setup** in Settings. It verifies the key using a read-only Auth API request and never displays the key.
 8. In **Team Management → Add user**, invite a new recipient who is not already an employee. Confirm the email arrives. Sign out of the CRM or use a private browser window, then open its link, choose a password and accept the invitation. The app verifies a valid pending invitation before changing any password.
 
+The default Supabase email templates are supported; custom SMTP and template editing are not required to accept an invitation that has been delivered. The `/auth/confirm` page reads browser-only verification tokens before enabling acceptance. If a link is expired or already used, request a fresh invitation rather than repeatedly opening the old one.
+
 A valid key does not prove inbox delivery. Supabase must allow emails to that recipient; default provider restrictions, email delivery settings, spam filtering and redirect allowlists can still prevent receipt. Settings shows recent invitation outcomes. “Accepted by email service” means the provider accepted the request, not that the recipient read or received it. Failed sends are tracked and pending reservations are cancelled. Existing authentication identities without employee profiles can use a recovery-link onboarding fallback.
 
 The key is only used after verified Super Admin checks. It is not used for ordinary records, profiles, imports or private files. No hosting/deployment credentials are needed.
