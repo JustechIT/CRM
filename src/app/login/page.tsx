@@ -28,6 +28,9 @@ export default function Login() {
         </div>
       )}
       <LoginForm configured={configured} />
+      <Link href="/forgot-password" className="text-link">
+        Forgot your password?
+      </Link>
     </main>
   );
 }

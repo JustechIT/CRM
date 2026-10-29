@@ -44,6 +44,18 @@ export function AcceptInvite({ configured }: { configured: boolean }) {
         if (result.error) throw result.error;
       }
       const user = await db.auth.getUser();
+      if (!user.error && user.data.user && h.get("type") === "recovery") {
+        const profile = await db
+          .from("employee_profiles")
+          .select("id")
+          .eq("id", user.data.user.id)
+          .eq("status", "active")
+          .maybeSingle();
+        if (!profile.error && profile.data) {
+          location.replace("/reset-password");
+          return;
+        }
+      }
       if (user.error || !user.data.user) {
         if (active)
           setTokenError(

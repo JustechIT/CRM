@@ -26,7 +26,27 @@ export async function GET(request: NextRequest) {
     });
     ok = !r.error;
   }
+  let destination = "/invite";
+  if (ok) {
+    const user = await db.auth.getUser();
+    if (user.data.user) {
+      const profile = await db
+        .from("employee_profiles")
+        .select("id")
+        .eq("id", user.data.user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      if (!profile.error && profile.data) destination = "/reset-password";
+    }
+  }
   return NextResponse.redirect(
-    new URL(ok ? "/invite" : "/invite?error=link", publicOrigin(request)),
+    new URL(
+      ok
+        ? destination
+        : p.get("type") === "recovery"
+          ? "/reset-password?error=link"
+          : "/invite?error=link",
+      publicOrigin(request),
+    ),
   );
 }

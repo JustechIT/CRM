@@ -40,7 +40,7 @@ values ('REPLACE-WITH-AUTH-USER-UUID','management');
 commit;
 ```
 
-Repeat with appropriate roles for additional employees. A user can have multiple role and department rows. Never insert an administrator role based on user-supplied signup metadata. Deactivate a profile by setting `status='inactive'` through a trusted operator; permissions then fail even if an auth session still exists. Profile and role changes have no browser write grants. Migration 0002 grants Sales read/write to Administrator, Management and Sales, and Sales deletion only to Administrator; other departments do not automatically receive Sales data access. The implemented invitation service validates the verified Super Admin on the server, keeps its credential server-only, records delivery outcomes and uses expiring, recipient-bound invitation links. Team Management supports permission and role editing. General password-recovery UI remains future work.
+Repeat with appropriate roles for additional employees. A user can have multiple role and department rows. Never insert an administrator role based on user-supplied signup metadata. Deactivate a profile by setting `status='inactive'` through a trusted operator; permissions then fail even if an auth session still exists. Profile and role changes have no browser write grants. Migration 0002 grants Sales read/write to Administrator, Management and Sales, and Sales deletion only to Administrator; other departments do not automatically receive Sales data access. The implemented invitation service validates the verified Super Admin on the server, keeps its credential server-only, records delivery outcomes and uses expiring, recipient-bound invitation links. Team Management supports permission and role editing. Password recovery is available through the dedicated request/reset pages.
 
 ### Database relationships and permission model
 
@@ -74,7 +74,7 @@ All application tables enable RLS. Anonymous clients have no table access. Activ
 
 The browser flows with a real Supabase project have **not been verified** without project configuration. Login/session renewal, REST integration, configured persistence and hosted RLS behavior remain release gates. Local PostgreSQL tests verify the actual migration under simulated Supabase auth claims; they do not prove hosted Supabase Authentication or PostgREST integration.
 
-The full Phase 1 is incomplete. Remaining integration work includes hosted authenticated acceptance tests and actual email/Storage service round trips. General password-recovery UI and broader owner-reassignment workflows are separate future features. No chart library is loaded because there is no implemented metric series yet. In-app notifications now use real accessible assigned work; email notifications are not implemented.
+The full Phase 1 is incomplete. Remaining integration work includes hosted authenticated acceptance tests and actual email/Storage service round trips. Password recovery is available through `/forgot-password` and `/reset-password`; broader owner-reassignment workflows remain separate future features. No chart library is loaded because there is no implemented metric series yet. In-app notifications now use real accessible assigned work; email notifications are not implemented.
 
 Contact creation currently selects from up to 500 authorized institutions; associated-contact detail lists are capped at 100. Replace these selectors with server-paginated lookups before using larger datasets. Database search currently uses bounded ILIKE queries; add appropriate trigram indexes after measuring real volume. Directory import detects exact normalized duplicates and skips them without silently merging accounts. No business data is stored in browser localStorage.
 
@@ -145,3 +145,7 @@ See [the finishing update guide](docs/finishing-update.md) for migrations 0011â€
 ## Invitation retries and bulk module permissions
 
 See [the invitation resend update](docs/invitation-resend-update.md). Existing installations through 0013 apply only `0014_invitation_resend.sql`. Removed employees are restored explicitly rather than duplicated; new bulk controls never include private Supplier Invoices.
+
+## Forgotten passwords
+
+See [password recovery setup](docs/password-recovery.md). Existing authenticated identities keep their accounts and permissions. Add the production `/reset-password` redirect URL in Supabase; no SQL migration is required.

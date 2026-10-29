@@ -201,3 +201,20 @@ test("Module access can be applied by group without selecting private invoices o
   });
   expect(response.status()).toBe(403);
 });
+
+test("Password recovery is reachable from login and rejects expired or unverified links", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("link", { name: "Forgot your password?", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Forgot your password?", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Send recovery email", exact: true })).toBeDisabled();
+  await page.goto("/reset-password");
+  await expect(page.getByRole("button", { name: "Save new password", exact: true })).toBeDisabled();
+  await page.goto("/login#error=access_denied&error_code=otp_expired&type=recovery");
+  await expect(page).toHaveURL(/\/reset-password$/);
+  await expect(page.locator(".form-error")).toContainText("expired or was already used");
+  await expect(page.getByRole("button", { name: "Save new password", exact: true })).toBeDisabled();
+  await page.goto("/#access_token=synthetic-test-only&refresh_token=synthetic-test-only&type=recovery");
+  await expect(page).toHaveURL(/\/reset-password$/);
+  await expect(page.getByRole("heading", { name: "Reset your password", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save new password", exact: true })).toBeDisabled();
+});
