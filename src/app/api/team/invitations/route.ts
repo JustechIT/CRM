@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { superAdmin } from "@/lib/team/access";
 import { authAdministrator } from "@/lib/team/admin-client";
 import { userSchema } from "@/lib/team/config";
-import { deliverInvitation } from "@/lib/team/delivery";
+import {
+  deliverInvitation,
+  invitationDeliveryMessage,
+} from "@/lib/team/delivery";
 import { idSchema } from "@/lib/sales/validation";
 export async function POST(request: NextRequest) {
   if (!requestHasSameOrigin(request))
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 503 },
     );
-  const parsed = userSchema.safeParse(await request.json());
+  const parsed = userSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success || !parsed.data.email)
     return NextResponse.json(
       { error: "Enter a valid email, name, department, role and permissions." },
@@ -42,33 +45,43 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "An employee or pending invitation already exists, or the permissions are invalid. Edit the existing entry.",
+          "An employee or pending invitation already exists. For invitations, use Resend below. For a removed user, choose Account Status → Removed / Archived, open their name, and activate their existing account. Do not create a duplicate.",
       },
       { status: 400 },
     );
+  return sendInvitation(request, access, admin, u.email!, reservation.data);
+}
+
+async function sendInvitation(
+  request: NextRequest,
+  access: NonNullable<Awaited<ReturnType<typeof superAdmin>>>,
+  admin: NonNullable<ReturnType<typeof authAdministrator>>,
+  email: string,
+  invitation: string,
+) {
   const delivery = await deliverInvitation({
     invite: async () => {
-      const r = await admin.auth.admin.inviteUserByEmail(parsed.data.email!, {
+      const r = await admin.auth.admin.inviteUserByEmail(email, {
         redirectTo: `${publicOrigin(request)}/auth/confirm`,
       });
       return r.error;
     },
     recover: async () => {
-      const r = await admin.auth.resetPasswordForEmail(parsed.data.email!, {
+      const r = await admin.auth.resetPasswordForEmail(email, {
         redirectTo: `${publicOrigin(request)}/auth/confirm`,
       });
       return r.error;
     },
     record: async (sent, code) => {
       const r = await access.db.rpc("record_invitation_delivery", {
-        invitation: reservation.data,
+        invitation: invitation,
         sent,
         error_code: code,
       });
       if (r.error) {
         if (!sent)
           await access.db.rpc("team_cancel_invitation", {
-            invitation: reservation.data,
+            invitation: invitation,
           });
         throw Error("Delivery tracking unavailable.");
       }
@@ -77,10 +90,17 @@ export async function POST(request: NextRequest) {
   if (!delivery.sent)
     return NextResponse.json(
       {
-        error:
-          "The invitation could not be sent. Check Supabase email delivery and redirect settings.",
+        error: invitationDeliveryMessage(delivery.errorCode ?? "send_failed"),
       },
-      { status: 503 },
+      {
+        status: [
+          "over_email_send_rate_limit",
+          "over_request_rate_limit",
+          "email_rate_limit_exceeded",
+        ].includes(delivery.errorCode ?? "")
+          ? 429
+          : 503,
+      },
     );
   return NextResponse.json(
     {
@@ -95,6 +115,42 @@ export async function POST(request: NextRequest) {
     { headers: { "Cache-Control": "private, no-store" } },
   );
 }
+export async function PATCH(request: NextRequest) {
+  if (!requestHasSameOrigin(request))
+    return NextResponse.json({ error: "Invalid origin." }, { status: 403 });
+  const access = await superAdmin();
+  if (!access)
+    return NextResponse.json(
+      { error: "Verified Super Admin required." },
+      { status: 403 },
+    );
+  const admin = authAdministrator();
+  if (!admin)
+    return NextResponse.json(
+      { error: "Configure the server-only SUPABASE_SECRET_KEY first." },
+      { status: 503 },
+    );
+  const input = await request.json().catch(() => null);
+  if (!idSchema.safeParse(input?.id).success)
+    return NextResponse.json({ error: "Invalid invitation." }, { status: 400 });
+  const reservation = await access.db.rpc("team_prepare_invitation_resend", {
+    invitation: input.id,
+  });
+  if (reservation.error || !reservation.data)
+    return NextResponse.json(
+      {
+        error:
+          reservation.error?.code === "P0002"
+            ? "Wait one minute before resending this invitation."
+            : reservation.error?.code === "PGRST202"
+              ? "Run migration 0014_invitation_resend.sql before resending invitations."
+              : "This invitation cannot be resent. If the person is already an employee, edit or restore their existing account instead.",
+      },
+      { status: reservation.error?.code === "P0002" ? 429 : 400 },
+    );
+  return sendInvitation(request, access, admin, reservation.data, input.id);
+}
+
 export async function DELETE(request: NextRequest) {
   if (!requestHasSameOrigin(request))
     return NextResponse.json({ error: "Invalid origin." }, { status: 403 });

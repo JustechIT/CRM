@@ -178,3 +178,26 @@ test("Default invitation callback renders without dropping browser-only tokens",
   await expect(page.locator(".form-error")).toContainText("expired or was already used");
   await expect(page).toHaveURL(/\/auth\/confirm$/);
 });
+
+test("Module access can be applied by group without selecting private invoices or enabling Viewer writes", async ({ page }) => {
+  await page.goto("/team?new=1");
+  await page.getByRole("button", { name: "View all", exact: true }).click();
+  await expect(page.getByText("11 of 11 modules selected.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Explicitly authorize Supplier Invoices" })).not.toBeChecked();
+  await page.getByRole("button", { name: "Clear access", exact: true }).click();
+  await page.getByLabel("Apply permissions to").selectOption("justech");
+  await page.getByRole("button", { name: "View & edit all", exact: true }).click();
+  await expect(page.getByRole("checkbox", { name: "Justech Sales: write", exact: true })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Marketing: read", exact: true })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "Al-Fikr Sales: read", exact: true })).not.toBeChecked();
+  await page.getByRole("combobox", { name: "Role", exact: true }).selectOption("viewer");
+  await expect(page.getByRole("checkbox", { name: "Justech Sales: write", exact: true })).not.toBeChecked();
+  await expect(page.getByRole("button", { name: "Full access", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Send invitation", exact: true })).toBeDisabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const response = await page.request.patch("/api/team/invitations", {
+    headers: { Origin: "http://127.0.0.1:3000" },
+    data: { id: "11111111-1111-4111-8111-111111111111" },
+  });
+  expect(response.status()).toBe(403);
+});

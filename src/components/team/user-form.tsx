@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,13 +8,25 @@ import {
   type TeamUser,
   type ModuleGrant,
 } from "@/lib/team/config";
-export function UserForm({ user }: { user?: TeamUser }) {
+import {
+  applyPermissionPreset,
+  permissionGroups,
+  type PermissionPreset,
+} from "@/lib/team/permissions";
+export function UserForm({
+  user,
+  enabled = true,
+}: {
+  user?: TeamUser;
+  enabled?: boolean;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [role, setRole] = useState(
     user?.role_id === "legacy" ? "" : (user?.role_id ?? "employee"),
   );
+  const [permissionGroup, setPermissionGroup] = useState("all");
   const [grants, setGrants] = useState<ModuleGrant[]>(user?.modules ?? []);
   const change = (
     module: string,
@@ -41,6 +53,7 @@ export function UserForm({ user }: { user?: TeamUser }) {
       className="sales-form"
       onSubmit={async (e) => {
         e.preventDefault();
+        if (!enabled) return;
         setBusy(true);
         setError("");
         const f = new FormData(e.currentTarget);
@@ -135,7 +148,13 @@ export function UserForm({ user }: { user?: TeamUser }) {
             name="role"
             required
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={(e) => {
+              setRole(e.target.value);
+              if (e.target.value === "viewer")
+                setGrants((old) =>
+                  old.map((g) => ({ ...g, write: false, delete: false })),
+                );
+            }}
           >
             <option value="" disabled>
               Choose a role
@@ -157,7 +176,71 @@ export function UserForm({ user }: { user?: TeamUser }) {
           Active account
         </label>
       </div>
+      {user?.removed_at && (
+        <p className="notice">
+          This account is archived, not permanently deleted. To restore access,
+          select Active account, choose its role and module permissions, then
+          Save user. The person keeps their existing login.
+        </p>
+      )}
       <h2>Module permissions</h2>
+      <div className="panel permission-presets">
+        <label>
+          Apply permissions to
+          <select
+            value={permissionGroup}
+            onChange={(e) => setPermissionGroup(e.target.value)}
+          >
+            {permissionGroups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="actions">
+          {(
+            [
+              ["view", "View all"],
+              ["edit", "View & edit all"],
+              ["full", "Full access"],
+              ["none", "Clear access"],
+            ] as const
+          ).map(([preset, label]) => (
+            <button
+              type="button"
+              className="button"
+              key={preset}
+              disabled={
+                role === "viewer" && (preset === "edit" || preset === "full")
+              }
+              onClick={() =>
+                setGrants((old) =>
+                  applyPermissionPreset(
+                    old,
+                    permissionGroups.find((g) => g.id === permissionGroup)!
+                      .modules,
+                    preset as PermissionPreset,
+                    role,
+                  ),
+                )
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="muted">
+          Choose a group, then apply access with one click. Full access includes
+          deletion. Review the checkboxes below before saving. Supplier Invoices
+          always require separate authorization.
+        </p>
+        <p role="status">
+          {grants.filter((g) => g.read).length} of {moduleChoices.length}{" "}
+          modules selected. Changes apply only when you save or send the
+          invitation.
+        </p>
+      </div>
       <p className="muted">
         Managers manage permitted module records. Employees manage assigned work
         (or their own records where no assignee exists). Viewers cannot write.
@@ -213,7 +296,7 @@ export function UserForm({ user }: { user?: TeamUser }) {
         <Link className="button" href="/team">
           Cancel
         </Link>
-        <button className="button primary" disabled={busy}>
+        <button className="button primary" disabled={busy || !enabled}>
           {busy ? "Saving…" : user ? "Save user" : "Send invitation"}
         </button>
       </div>
@@ -273,26 +356,82 @@ export function RemoveUser({ user }: { user: TeamUser }) {
     </details>
   );
 }
-export function CancelInvitation({ id }: { id: string }) {
+export function InvitationActions({
+  id,
+  status,
+}: {
+  id: string;
+  status: string;
+}) {
   const router = useRouter();
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
+  useEffect(() => {
+    if (!cooldown) return;
+    const timer = setTimeout(() => setCooldown(false), 60000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
+  async function submit(method: "PATCH" | "DELETE") {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const r = await fetch("/api/team/invitations", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw Error(data.error ?? "The request failed.");
+      setMessage(
+        method === "PATCH"
+          ? "The email service accepted the new invitation. Use only the newest email link, in a private window."
+          : "Invitation cancelled.",
+      );
+      if (method === "PATCH") {
+        setCooldown(true);
+      }
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The request failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <>
-      <button
-        className="button"
-        onClick={async () => {
-          const r = await fetch("/api/team/invitations", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id }),
-          });
-          if (r.ok) router.refresh();
-          else setError("Invitation could not be cancelled.");
-        }}
-      >
-        Cancel invitation
-      </button>
-      {error && <p role="alert">{error}</p>}
-    </>
+    <div>
+      <div className="actions">
+        <button
+          type="button"
+          className="button"
+          disabled={busy || cooldown}
+          onClick={() => void submit("PATCH")}
+        >
+          {busy
+            ? "Working…"
+            : cooldown
+              ? "Sent — wait one minute"
+              : "Resend invitation"}
+        </button>
+        {status === "Pending" && (
+          <button
+            type="button"
+            className="button"
+            disabled={busy}
+            onClick={() => void submit("DELETE")}
+          >
+            Cancel invitation
+          </button>
+        )}
+      </div>
+      {message && <p role="status">{message}</p>}
+      {error && (
+        <p role="alert" className="form-error">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

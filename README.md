@@ -18,7 +18,7 @@ The project stores npm's cache in the ignored `.npm-cache` directory so installa
 ## Supabase setup
 
 1. Create a Supabase project. Disable public registration in **Authentication → Providers / Sign In settings**. Configure your application URL and allowed redirect URLs for each deployment.
-2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0013). For an existing installation with 0001–0005 applied, apply 0006–0013 in order. If only 0001/0002 are applied, continue from 0003 through 0013. Supplier Invoice access is granted separately using the explicitly approved-account script in the update guide. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
+2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0014). For an existing installation with 0001–0005 applied, apply 0006–0014 in order. If only 0001/0002 are applied, continue from 0003 through 0014. Supplier Invoice access is granted separately using the explicitly approved-account script in the update guide. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
 3. Copy `.env.example` to `.env.local` and set:
    - `NEXT_PUBLIC_SUPABASE_URL`: project HTTPS URL.
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: project's public publishable key. A public anonymous key also works under this variable name for older projects.
@@ -141,3 +141,7 @@ See [the Workspace/Team update guide](docs/workspace-team-update.md) for migrati
 ## Al-Fikr, import, dashboard and personal account update
 
 See [the finishing update guide](docs/finishing-update.md) for migrations 0011–0013, invitation setup, live three-account checks, CSV/XLSX import, Settings and My Profile. Existing installations through 0010 run only the three new SQL files. No live database/account changes or email sends were performed from the development workspace.
+
+## Invitation retries and bulk module permissions
+
+See [the invitation resend update](docs/invitation-resend-update.md). Existing installations through 0013 apply only `0014_invitation_resend.sql`. Removed employees are restored explicitly rather than duplicated; new bulk controls never include private Supplier Invoices.

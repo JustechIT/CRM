@@ -6,7 +6,7 @@ import { PageHeader, EmptyState, Badge } from "@/components/ui";
 import {
   UserForm,
   RemoveUser,
-  CancelInvitation,
+  InvitationActions,
 } from "@/components/team/user-form";
 import type { TeamUser } from "@/lib/team/config";
 import { activateAdministrator } from "./activation";
@@ -97,10 +97,13 @@ export default async function Team({
           {access ? (
             <UserForm />
           ) : (
-            <EmptyState
-              title="Super Admin verification required"
-              description="Connect Supabase and verify the designated account before sending invitations."
-            />
+            <>
+              <EmptyState
+                title="Super Admin verification required"
+                description="Setup preview only. You can explore permission controls, but sending requires the verified administrator."
+              />
+              <UserForm enabled={false} />
+            </>
           )}
         </section>
       </>
@@ -144,8 +147,8 @@ export default async function Team({
   const invites = access
     ? await access.db
         .from("team_invitations")
-        .select("id,email,status,expires_at")
-        .eq("status", "Pending")
+        .select("id,email,status,expires_at,delivery_error,mailed_at")
+        .in("status", ["Pending", "Cancelled"])
         .order("created_at", { ascending: false })
         .limit(100)
     : null;
@@ -321,7 +324,13 @@ export default async function Team({
       </section>
       {access && (
         <section className="panel">
-          <h2>Pending invitations</h2>
+          <h2>Invitations</h2>
+          <p className="muted">
+            Use Resend invitation for an expired link or a failed email. Open
+            only the newest email on a computer that can reach the CRM. Removed
+            employees must be restored using the Removed / Archived filter
+            above.
+          </p>
           {invites?.error ? (
             <p>Invitations could not be loaded.</p>
           ) : invites?.data?.length ? (
@@ -330,6 +339,7 @@ export default async function Team({
                 <thead>
                   <tr>
                     <th>Email</th>
+                    <th>Status</th>
                     <th>Expires</th>
                     <th>Action</th>
                   </tr>
@@ -338,9 +348,19 @@ export default async function Team({
                   {invites.data.map((i) => (
                     <tr key={i.id}>
                       <td>{i.email}</td>
+                      <td>
+                        <Badge>
+                          {i.delivery_error
+                            ? "Email failed"
+                            : i.status === "Pending" &&
+                                new Date(i.expires_at) < new Date()
+                              ? "Expired"
+                              : i.status}
+                        </Badge>
+                      </td>
                       <td>{i.expires_at.slice(0, 10)}</td>
                       <td>
-                        <CancelInvitation id={i.id} />
+                        <InvitationActions id={i.id} status={i.status} />
                       </td>
                     </tr>
                   ))}
@@ -348,7 +368,7 @@ export default async function Team({
               </table>
             </div>
           ) : (
-            <p className="muted">No pending invitations.</p>
+            <p className="muted">No invitations to show.</p>
           )}
         </section>
       )}
