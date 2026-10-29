@@ -7,10 +7,10 @@ import { validate } from "../src/lib/departments/validation";
 import { salesCsv } from "../src/lib/sales/csv";
 import { validateSales } from "../src/lib/sales/validation";
 
-test("Both opportunity forms accept real organization text and keep other reference validation", () => {
+test("Both opportunity forms accept real organization text and validate product text", () => {
   const raw = {
     organization_name: "  Université d'Été — Tunis  ",
-    product_id: ids.root,
+    product_text: "  A new product  ",
     name: "Opportunity",
     date: "2026-10-29",
     due_date: "",
@@ -48,7 +48,7 @@ test("Both opportunity forms accept real organization text and keep other refere
       check({ ...raw, organization_name: "x".repeat(251) }).success,
       false,
     );
-    assert.equal(check({ ...raw, product_id: "not-a-product" }).success, false);
+    assert.equal(check({ ...raw, product_text: "" }).success, false);
   }
 });
 
@@ -209,6 +209,159 @@ test("Organization-text migration preserves legacy rows and relationships and su
     );
     assert.equal(constraints.rows.length, 2);
     assert.ok(constraints.rows.every((c) => c.is_nullable === "NO"));
+  } finally {
+    await db.close();
+  }
+});
+
+test("Product-text migration retains old products and opportunities while new text-only records remain permission protected", async () => {
+  const { db, as, insert } = await latestDatabase("0015");
+  try {
+    await as(ids.root);
+    const product = (
+      await db.query<{ id: string }>(
+        "select create_alfikr_product('Existing catalog item') as id",
+      )
+    ).rows[0].id;
+    await db.exec("reset role");
+    await db.query("update products set business='Both' where id=$1", [
+      product,
+    ]);
+    await as(ids.root);
+    const oldRows = [];
+    for (const table of ["sales_opportunities", "alfikr_sales_opportunities"]) {
+      const id = await insert(table, {
+        organization_name: "Organization",
+        product_id: product,
+        name: "Old opportunity",
+        date: "2026-10-29",
+        stage: "New",
+        owner_id: ids.root,
+      });
+      const before = (
+        await db.query<{ row: Record<string, unknown> }>(
+          `select to_jsonb(s) as row from ${table} s where id=$1`,
+          [id],
+        )
+      ).rows[0].row;
+      oldRows.push({ table, id, before });
+    }
+    await db.exec("reset role");
+    await db.exec(
+      "create view existing_product_report as select id,product_name from sales_opportunities_list",
+    );
+    await db.exec(
+      await readFile(
+        new URL(
+          "../supabase/migrations/0016_opportunity_product_text.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await as(ids.root);
+    for (const { table, id, before } of oldRows) {
+      const after = (
+        await db.query<{ row: Record<string, unknown> }>(
+          `select to_jsonb(s) as row from ${table} s where id=$1`,
+          [id],
+        )
+      ).rows[0].row;
+      assert.deepEqual(after, { ...before, product_text: "" });
+      assert.equal(
+        (
+          await db.query<{ product_text: string }>(
+            `select product_text from ${table}_list where id=$1`,
+            [id],
+          )
+        ).rows[0].product_text,
+        "Existing catalog item",
+      );
+      await db.query(
+        `update ${table} set product_text='Edited product name' where id=$1`,
+        [id],
+      );
+      assert.equal(
+        (
+          await db.query<{ product_id: string }>(
+            `select product_id from ${table} where id=$1`,
+            [id],
+          )
+        ).rows[0].product_id,
+        product,
+      );
+      const row = {
+        organization_name: "A prospect",
+        product_text: "A brand-new product — édition",
+        name: "New opportunity",
+        date: "2026-10-29",
+        stage: "New",
+        owner_id: ids.root,
+      };
+      const created = await insert(table, row);
+      const saved = (
+        await db.query<{ product_text: string; product_id: null }>(
+          `select product_text,product_id from ${table}_list where id=$1 and search_text ilike '%édition%' order by product_text`,
+          [created],
+        )
+      ).rows[0];
+      assert.equal(saved.product_text, row.product_text);
+      assert.equal(saved.product_id, null);
+      await assert.rejects(insert(table, { ...row, product_text: " " }));
+      await assert.rejects(
+        insert(table, { ...row, product_text: "x".repeat(251) }),
+      );
+      await assert.rejects(insert(table, { ...row, owner_id: ids.manager }));
+      await as(ids.viewer);
+      await assert.rejects(insert(table, { ...row, owner_id: ids.viewer }));
+      assert.equal(
+        (
+          await db.query(
+            `update ${table} set product_text='Forbidden' where id=$1 returning id`,
+            [created],
+          )
+        ).rows.length,
+        0,
+      );
+      await as(ids.root);
+    }
+    assert.equal(
+      (await db.query("select * from products where name like 'A brand-new%'"))
+        .rows.length,
+      0,
+    );
+    assert.equal(
+      (await db.query("select * from products where id=$1", [product])).rows
+        .length,
+      1,
+    );
+    const wrongProduct = (
+      await db.query<{ id: string }>(
+        "select create_alfikr_product('Al-Fikr only item') as id",
+      )
+    ).rows[0].id;
+    await assert.rejects(
+      insert("sales_opportunities", {
+        organization_name: "Prospect",
+        product_id: wrongProduct,
+        product_text: "Cannot bypass business guard",
+        name: "Invalid",
+        date: "2026-10-29",
+        stage: "New",
+        owner_id: ids.root,
+      }),
+      /Justech product/,
+    );
+    await db.exec("reset role");
+    assert.equal(
+      (await db.query("select * from existing_product_report")).rows.length,
+      2,
+    );
+    const otherFields = await db.query<{ is_nullable: string }>(
+      "select is_nullable from information_schema.columns where table_schema='public' and table_name in ('sales_subscriptions','alfikr_sales_subscriptions','sales_payments','sales_quotations') and column_name='product_id'",
+    );
+    assert.equal(otherFields.rows.length, 4);
+    assert.ok(otherFields.rows.every((c) => c.is_nullable === "NO"));
   } finally {
     await db.close();
   }

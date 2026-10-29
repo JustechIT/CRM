@@ -27,7 +27,9 @@ function value(
   const v =
     key === "organization_name"
       ? record?.[key] || record?.account_name
-      : record?.[key];
+      : key === "product_text"
+        ? record?.[key] || record?.product_name
+        : record?.[key];
   return typeof v === "string" || typeof v === "number" ? String(v) : fallback;
 }
 export function SalesForm({
@@ -227,7 +229,7 @@ export function SalesForm({
       <div className="sales-form-help">
         <span>
           {section === "opportunities"
-            ? "* Required fields. Type the organization name directly; products come from your existing catalog."
+            ? "* Required fields. Type the organization and product names directly."
             : "* Required fields. Institutions come from Accounts & Contacts."}
         </span>
         <Link

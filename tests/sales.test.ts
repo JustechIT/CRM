@@ -68,11 +68,12 @@ test("amount validation preserves exact three-decimal strings and rejects invali
     assert.equal(decimal.safeParse(value).success, false);
   assert.equal(formatAmount("999999999999.999"), "999,999,999,999.999");
 });
-test("opportunities accept typed organizations and validate products/dates; mass-assigned metadata is stripped", () => {
+test("opportunities accept typed organizations/products and validate dates; mass-assigned metadata is stripped", () => {
   const value = {
     ...refs,
     name: " New opportunity ",
     organization_name: "  A newly contacted institution  ",
+    product_text: "  New product  ",
     date: "2026-10-27",
     due_date: "",
     expected_close: "",
@@ -87,6 +88,7 @@ test("opportunities accept typed organizations and validate products/dates; mass
     assert.equal("owner_id" in r.data, false);
     assert.equal("revision" in r.data, false);
     assert.equal("account_id" in r.data, false);
+    assert.equal("product_id" in r.data, false);
     assert.equal(
       "organization_name" in r.data ? r.data.organization_name : null,
       "A newly contacted institution",
@@ -95,7 +97,7 @@ test("opportunities accept typed organizations and validate products/dates; mass
   }
   for (const change of [
     { organization_name: "" },
-    { product_id: "bad" },
+    { product_text: "" },
     { date: "2026-02-30" },
     { due_date: "2026-10-26" },
     { expected_close: "2026-10-01" },

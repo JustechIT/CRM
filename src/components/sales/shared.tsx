@@ -99,6 +99,10 @@ export function RecordValue({
     );
   if (field.key === "account_id")
     return <>{record.account_name ?? "Unavailable institution"}</>;
+  if (field.key === "product_text")
+    return (
+      <>{textValue(record, "product_text") || record.product_name || "—"}</>
+    );
   if (field.key === "product_id")
     return <>{record.product_name ?? "Unavailable product"}</>;
   if (field.type === "subscription")

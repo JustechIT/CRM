@@ -84,7 +84,7 @@ export const salesDefinitions: Record<
         type: "text",
         required: true,
       },
-      { key: "product_id", label: "Product", type: "product", required: true },
+      { key: "product_text", label: "Product", type: "text", required: true },
       { key: "date", label: "Date", type: "date", required: true },
       { key: "due_date", label: "Due Date", type: "date" },
       {

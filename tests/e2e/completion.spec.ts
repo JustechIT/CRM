@@ -227,6 +227,11 @@ test("Justech and Al-Fikr opportunities use a normal Organization text field whi
     await expect(page.getByRole("combobox", { name: "Organization", exact: false })).toHaveCount(0);
     await organization.fill("Université d'Été — Tunis");
     await expect(organization).toHaveValue("Université d'Été — Tunis");
+    const product = page.getByRole("textbox", { name: /^Product/ });
+    await expect(product).toBeVisible();
+    await expect(page.getByRole("combobox", { name: /^Product/ })).toHaveCount(0);
+    await product.fill("New product / package");
+    await expect(product).toHaveValue("New product / package");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     if (scope === "justech-sales") {
       await page.screenshot({ path: `/tmp/justech-readability-${test.info().project.name}.png`, fullPage: true });
@@ -236,5 +241,6 @@ test("Justech and Al-Fikr opportunities use a normal Organization text field whi
     }
     await page.goto(`/modules/${scope}/subscriptions?new=1`);
     await expect(page.getByRole("combobox", { name: "Customer", exact: false })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: /^Product/ })).toBeVisible();
   }
 });

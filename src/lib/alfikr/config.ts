@@ -21,11 +21,10 @@ export const alfikrSections: Section[] = [
         required: true,
       },
       {
-        key: "product_id",
+        key: "product_text",
         label: "Product / Package",
-        type: "reference",
+        type: "text",
         required: true,
-        reference: "products",
       },
       {
         key: "date",

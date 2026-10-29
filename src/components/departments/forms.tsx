@@ -264,7 +264,7 @@ export function DepartmentForm({
       <p className="department-help">
         {section.department === "alfikr-sales" &&
         section.slug === "opportunities"
-          ? "* Required fields. Type the organization name directly; products come from your existing catalog."
+          ? "* Required fields. Type the organization and product names directly."
           : "* Required fields. Reference choices come from existing records; no duplicate organizations, employees or products are created."}
       </p>
       <div className="form-actions">
