@@ -89,10 +89,24 @@ test("Priorities offer My Priorities and employee department priority status fil
   await filters
     .getByRole("combobox", { name: "Status", exact: true })
     .selectOption("On Hold");
-  await filters.getByRole("button", { name: "Apply filters" }).click();
   await expect(page).toHaveURL(/mine=1/);
   await expect(page).toHaveURL(/priority=Urgent/);
   await expect(page).toHaveURL(/status=On\+Hold/);
+});
+test("Reset keeps the current project when filtering IT tasks", async ({ page }) => {
+  const project = "11111111-1111-4111-8111-111111111111";
+  const path = `/modules/workspace/platform/issues?project=${project}`;
+  await page.goto(path);
+  const filters = page.getByRole("form", { name: "Filter Tasks / Issues" });
+  await filters
+    .getByRole("combobox", { name: "Status", exact: true })
+    .selectOption("Completed");
+  await expect(page).toHaveURL(/status=Completed/);
+  await filters.getByRole("link", { name: "Reset", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`\\?project=${project}$`));
+  await expect(
+    page.getByRole("heading", { name: "Tasks / Issues", exact: true }),
+  ).toBeVisible();
 });
 test("Conferences and Events tabs remain separate, and follow-up dates and ownership are editable", async ({
   page,

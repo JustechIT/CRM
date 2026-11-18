@@ -252,7 +252,7 @@ export default async function Team({
             Reset
           </Link>
         </form>
-        <div className="table-wrap">
+        <div className="table-wrap team-table-wrap">
           <table>
             <thead>
               <tr>
@@ -334,7 +334,7 @@ export default async function Team({
           {invites?.error ? (
             <p>Invitations could not be loaded.</p>
           ) : invites?.data?.length ? (
-            <div className="table-wrap">
+            <div className="table-wrap team-table-wrap">
               <table>
                 <thead>
                   <tr>

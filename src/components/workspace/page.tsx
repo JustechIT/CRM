@@ -22,6 +22,7 @@ import {
   FilterForm,
   FieldValue,
   Pagination,
+  url,
 } from "@/components/departments/table";
 async function Contents({
   scope,
@@ -78,6 +79,7 @@ async function Contents({
     slug,
     slug === "issues" ? { project: projectId } : {},
   );
+  const resetView = slug === "issues" ? base : modulePath(scope, slug);
   return (
     <>
       {!configured && <SetupNotice />}
@@ -103,9 +105,7 @@ async function Contents({
           href={
             row || creating
               ? base
-              : scope === "platform"
-                ? modulePath("platform", "projects")
-                : base
+              : resetView
           }
         >
           {row || creating ? "Back to list" : "Reset view"}
@@ -278,24 +278,9 @@ async function ProjectTasks({
   const data = access
     ? await list(access, section, scoped)
     : { rows: [], total: 0, filters: { page: 1 } };
-  const pageUrl = (n: number) => {
-    const p: Record<string, string> = {
-      record: project.id,
-      project: project.id,
-      page: String(n),
-    };
-    for (const k of [
-      "q",
-      "status",
-      "sort",
-      "direction",
-      "employee",
-      "employee_label",
-      "priority",
-    ])
-      if (param(params, k)) p[k] = param(params, k);
-    return modulePath("platform", "projects", p);
-  };
+  const projectSection = getSection("platform", "projects")!;
+  const pageUrl = (n: number) =>
+    url(projectSection, scoped, { page: String(n), saved: null });
   return (
     <section className="panel">
       <div className="panel-heading">

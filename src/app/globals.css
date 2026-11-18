@@ -738,6 +738,9 @@ h3 {
 .table-wrap {
   overflow: auto;
 }
+.team-table-wrap {
+  margin: 12px 16px;
+}
 table {
   width: 100%;
   border-collapse: collapse;

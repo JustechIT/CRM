@@ -9,6 +9,7 @@ import type {
   Params,
 } from "@/lib/departments/types";
 import { ReferencePicker } from "./reference-picker";
+import { LiveFilterForm } from "./live-filter-form";
 import { isWorkspaceScope } from "@/lib/workspace/config";
 import { utcDay, addDays } from "@/lib/sales/metrics";
 import { filters } from "@/lib/departments/data";
@@ -93,11 +94,20 @@ export function FilterForm({
     (field) => field.key === section.statusKey,
   );
   const date = section.fields.find((field) => field.type === "date");
+  const path = contextRecord
+    ? modulePath("platform", "projects")
+    : modulePath(section.department, section.slug);
+  const resetPath = contextRecord
+    ? modulePath("platform", "projects", { record: contextRecord })
+    : modulePath(
+        section.department,
+        section.slug,
+        section.slug === "issues" && f.project ? { project: f.project } : {},
+      );
   return (
-    <form
-      className="sales-filters"
-      method="get"
-      aria-label={`Filter ${section.title}`}
+    <LiveFilterForm
+      action={path.split("?")[0]}
+      label={`Filter ${section.title}`}
     >
       {contextRecord && (
         <input type="hidden" name="record" value={contextRecord} />
@@ -217,18 +227,17 @@ export function FilterForm({
           ),
       )}
       <button className="button">Apply filters</button>
-      <Link
-        className="text-link"
-        href={modulePath(section.department, section.slug)}
-      >
+      <Link className="text-link" href={resetPath}>
         Reset
       </Link>
       {(f.metric || f.project || f.session) && (
         <p className="department-filter-note">
-          Showing a focused view. Reset to see all records.
+          {section.slug === "issues"
+            ? "Showing tasks and issues for this project."
+            : "Showing a focused view. Reset to see all records."}
         </p>
       )}
-    </form>
+    </LiveFilterForm>
   );
 }
 export function DepartmentTable({
