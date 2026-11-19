@@ -6,11 +6,11 @@ import type { RecordData, Entity } from "@/lib/directory";
 export function RecordForm({
   entity,
   record,
-  accounts = [],
+  organization = "",
 }: {
   entity: Entity;
   record?: RecordData;
-  accounts?: { id: string; name: string }[];
+  organization?: string;
 }) {
   const [state, action, pending] = useActionState(
     saveRecord.bind(null, entity, record?.id ?? null),
@@ -30,7 +30,7 @@ export function RecordForm({
         type={type}
         required={required}
         defaultValue={String(record?.[name] ?? "")}
-        maxLength={name === "name" ? 200 : name.includes("name") ? 100 : 250}
+        maxLength={name === "first_name" || name === "last_name" ? 200 : 250}
       />
     </label>
   );
@@ -75,28 +75,16 @@ export function RecordForm({
         ) : (
           <>
             {input("first_name", "First name", "text", true)}
-            {input("last_name", "Last name", "text", true)}
+            {input("last_name", "Last name")}
             {input("job_title", "Job title")}
             {input("department", "Department")}
             <label>
-              Institution *
-              <select
-                name="account_id"
-                required
-                defaultValue={record?.account_id ?? ""}
-              >
-                <option value="" disabled>
-                  Select an institution
-                </option>
-                {accounts.map((a) => (
-                  <option value={a.id} key={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+              Organization
+              <input name="organization" maxLength={250} defaultValue={organization} />
             </label>
           </>
         )}
+        {input("address", "Address")}
         {input("email", "Email", "email")}
         {input("phone", "Phone", "tel")}
         <label className="full">

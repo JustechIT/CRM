@@ -27,7 +27,9 @@ function failure(message: string, form: FormData): SalesFormState {
     ),
   };
 }
-function databaseError(code?: string) {
+function databaseError(code?: string, message?: string) {
+  if (code === "P0001") return message ?? "This directory name matches several records.";
+  if (code === "42501" && message?.includes("directory write permission")) return message;
   if (code === "23505")
     return "This identifier or customer/product period already exists. Open the existing record instead of creating a duplicate.";
   if (code === "23503")
@@ -58,7 +60,11 @@ export async function saveSales(
       "Employee access with Sales write permission is required. No record was saved.",
       form,
     );
-  const result = validateSales(section, Object.fromEntries(form));
+  const input = Object.fromEntries(form);
+  const result = validateSales(
+    section,
+    section === "opportunities" ? input : { ...input, account_id: { name: input.account_id } },
+  );
   if (!result.success)
     return failure(
       result.error.issues
@@ -69,7 +75,14 @@ export async function saveSales(
         .join(" "),
       form,
     );
-  const values = result.data;
+  const { account_id, ...fields } = result.data as typeof result.data & {
+    account_id?: { name: string };
+    organization_name?: string;
+  };
+  const values = {
+    ...fields,
+    directory_names: { organization: fields.organization_name ?? account_id?.name },
+  };
   const request = access.db.from(salesDefinitions[section].table);
   let response;
   if (id) {
@@ -90,13 +103,14 @@ export async function saveSales(
       .insert({ ...values, owner_id: access.profile.id })
       .select("id,revision")
       .single();
-  if (response.error) return failure(databaseError(response.error.code), form);
+  if (response.error) return failure(databaseError(response.error.code, response.error.message), form);
   if (!response.data)
     return failure(
       "Someone changed or removed this record while you were editing. Your changes were not overwritten. Reopen the latest record and try again.",
       form,
     );
   refreshSales();
+  revalidatePath("/directory");
   const kind =
     section === "subscriptions"
       ? (values as { kind: SubscriptionKind }).kind
@@ -185,7 +199,7 @@ export async function saveProduct(
       .insert({ ...result.data, owner_id: access.profile.id })
       .select("id")
       .single();
-  if (response.error) return failure(databaseError(response.error.code), form);
+  if (response.error) return failure(databaseError(response.error.code, response.error.message), form);
   if (!response.data)
     return failure(
       "This product changed while you were editing. Reopen it before saving.",

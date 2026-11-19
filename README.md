@@ -18,7 +18,7 @@ The project stores npm's cache in the ignored `.npm-cache` directory so installa
 ## Supabase setup
 
 1. Create a Supabase project. Disable public registration in **Authentication → Providers / Sign In settings**. Configure your application URL and allowed redirect URLs for each deployment.
-2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0016). For an existing installation with 0001–0005 applied, apply 0006–0016 in order. If only 0001/0002 are applied, continue from 0003 through 0016. Supplier Invoice access is granted separately using the explicitly approved-account script in the update guide. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
+2. Apply the SQL migrations in `supabase/migrations` once in numeric order (0001–0017). For an existing installation with 0001–0005 applied, apply 0006–0017 in order. If only 0001/0002 are applied, continue from 0003 through 0017. Supplier Invoice access is granted separately using the explicitly approved-account script in the update guide. Use the Supabase SQL editor or your normal CLI migration workflow. Do not reset the existing database or rerun applied table-creation scripts.
 3. Copy `.env.example` to `.env.local` and set:
    - `NEXT_PUBLIC_SUPABASE_URL`: project HTTPS URL.
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: project's public publishable key. A public anonymous key also works under this variable name for older projects.
@@ -48,7 +48,7 @@ Repeat with appropriate roles for additional employees. A user can have multiple
 - `user_roles` / `role_permissions` implement additive, many-to-many permissions.
 - `user_departments` provides independent many-to-many department membership; department membership alone does not grant access.
 - `accounts` owns institution context and references an employee owner.
-- `contacts` references an account and employee owner; account deletion is restricted while contacts exist. Non-empty contact emails are unique within each account, case-insensitively.
+- `contacts` references an employee owner and can optionally link to an account. Account deletion is restricted while contacts reference it. Non-empty contact emails are unique within each account, case-insensitively.
 - `user_preferences` synchronizes each employee’s theme, sidebar, pins and in-app notification preference. Browser preferences contain no business data.
 - `activities` retains account/contact relationships and supports scoped Operations tasks and Workspace priorities.
 - `audit_records` stores actor, entity, record identifier, action and time for directory writes without copying personal record contents. Application users cannot modify audit entries.
@@ -76,7 +76,7 @@ The browser flows with a real Supabase project have **not been verified** withou
 
 The full Phase 1 is incomplete. Remaining integration work includes hosted authenticated acceptance tests and actual email/Storage service round trips. Password recovery is available through `/forgot-password` and `/reset-password`; broader owner-reassignment workflows remain separate future features. No chart library is loaded because there is no implemented metric series yet. In-app notifications now use real accessible assigned work; email notifications are not implemented.
 
-Contact creation currently selects from up to 500 authorized institutions; associated-contact detail lists are capped at 100. Replace these selectors with server-paginated lookups before using larger datasets. Database search currently uses bounded ILIKE queries; add appropriate trigram indexes after measuring real volume. Directory import detects exact normalized duplicates and skips them without silently merging accounts. No business data is stored in browser localStorage.
+Associated-contact detail lists are capped at 100. Database search currently uses bounded ILIKE queries; add appropriate trigram indexes after measuring real volume. Directory import detects exact normalized duplicates and skips them without silently merging accounts. No business data is stored in browser localStorage.
 
 Recommended next task: connect a nonproduction Supabase project, apply the migration, create distinct administrator/sales/read-only/inactive test identities, and automate the authenticated acceptance checks. Include Al-Fikr, directory imports, Settings, My Profile and invitation delivery in those connected-project checks.
 
@@ -157,3 +157,9 @@ See [the small opportunity/readability update](docs/opportunity-readability-upda
 ## Opportunity Product text update
 
 See [the Product-text update](docs/opportunity-product-text-update.md). Apply only `0016_opportunity_product_text.sql` to an existing installation through 0015. Product becomes free text in Justech and Al-Fikr opportunities only; existing links and other module product selections remain intact.
+
+## Typed directory names
+
+For an existing installation through 0016, apply only `0017_directory_names.sql` before deploying the matching application build. Contact and organization fields in Sales, Operations, Training, and Conferences link by typed name when the form saves. Existing links stay in place, and older unlinked text is resolved when the record is next saved. A single matching directory name is reused. Matching ignores case and repeated spaces. Pre-existing name collisions require disambiguation in the directory when creating a new link.
+
+Creating a directory entry still requires directory write access. New contacts can be saved without an organization; a module can still require its own organization or other record fields. New organizations use the module's business association, with shared association for Conferences. In a contact's directory form, a new organization inherits the previous organization's association when present, and uses shared association otherwise. Email, phone and address can be completed later in Accounts & Contacts.

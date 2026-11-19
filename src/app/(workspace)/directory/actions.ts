@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { accountSchema, contactSchema, uuid } from "@/lib/validation";
+import { accountDirectorySchema, contactDirectorySchema, uuid } from "@/lib/validation";
 import { authorized } from "@/lib/directory";
 export type FormState = { error: string };
 export async function saveRecord(
@@ -18,7 +18,7 @@ export async function saveRecord(
   if (!access)
     return { error: "You do not have permission to update the directory." };
   const result = (
-    entity === "accounts" ? accountSchema : contactSchema
+    entity === "accounts" ? accountDirectorySchema : contactDirectorySchema
   ).safeParse(Object.fromEntries(form));
   if (!result.success)
     return {
@@ -26,7 +26,11 @@ export async function saveRecord(
         .map((i) => `${i.path.join(" ")}: ${i.message}`)
         .join(" "),
     };
-  const values = { ...result.data };
+  const values: Record<string, unknown> = { ...result.data };
+  if (entity === "contacts") {
+    values.directory_names = { organization: values.organization };
+    delete values.organization;
+  }
   const response = id
     ? await access.db
         .from(entity)
@@ -42,11 +46,14 @@ export async function saveRecord(
   if (response.error)
     return {
       error:
-        response.error.code === "23505"
+        response.error.code === "P0001"
+          ? response.error.message
+          : response.error.code === "23505"
           ? "A record with this unique value already exists. Review the existing record."
           : "The record could not be saved. Check your permissions and related institution, then try again.",
     };
   revalidatePath("/directory");
+  revalidatePath("/modules/[...slug]", "page");
   redirect(`/directory/${entity}/${response.data.id}?saved=1`);
 }
 export async function deleteRecord(

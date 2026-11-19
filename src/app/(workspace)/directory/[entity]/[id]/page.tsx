@@ -37,25 +37,17 @@ export default async function Detail({
   if (!record) notFound();
   const write = await authorized("directory.write");
   const remove = await authorized("directory.delete");
-  let accounts: { id: string; name: string }[] = [];
+  let organization = "";
   let contacts: RecordData[] = [];
-  if (entity === "contacts") {
-    const r = await access.db
+  if (entity === "contacts" && record.account_id) {
+    const parent = await access.db
       .from("accounts")
-      .select("id,name")
-      .order("name")
-      .limit(500);
-    if (r.error) throw new Error("Institutions could not be loaded.");
-    accounts = r.data ?? [];
-    if (!accounts.some((a) => a.id === record.account_id)) {
-      const parent = await access.db
-        .from("accounts")
-        .select("id,name")
-        .eq("id", record.account_id)
-        .maybeSingle();
-      if (parent.data) accounts.push(parent.data);
-    }
-  } else {
+      .select("name")
+      .eq("id", record.account_id)
+      .maybeSingle();
+    if (parent.error) throw new Error("The organization could not be loaded.");
+    organization = parent.data?.name ?? "";
+  } else if (entity === "accounts") {
     const r = await access.db
       .from("contacts")
       .select("id,first_name,last_name,email")
@@ -88,7 +80,7 @@ export default async function Detail({
       </PageHeader>
       {query.edit === "1" && write ? (
         <section className="panel">
-          <RecordForm entity={entity} record={record} accounts={accounts} />
+          <RecordForm entity={entity} record={record} organization={organization} />
         </section>
       ) : (
         <div className="detail-grid">
@@ -102,6 +94,7 @@ export default async function Detail({
                       "id",
                       "owner_id",
                       "account_id",
+                      "directory_names",
                       "created_at",
                       "updated_at",
                     ].includes(key),
@@ -120,15 +113,14 @@ export default async function Detail({
                 UTC
               </dd>
             </dl>
-            {entity === "contacts" && (
+            {entity === "contacts" && record.account_id && (
               <p>
                 Institution:{" "}
                 <Link
                   className="text-link"
                   href={`/directory/accounts/${record.account_id}`}
                 >
-                  {accounts.find((a) => a.id === record.account_id)?.name ??
-                    "View institution"}
+                  {organization || "View institution"}
                 </Link>
               </p>
             )}

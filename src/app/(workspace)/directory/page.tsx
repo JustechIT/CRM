@@ -3,7 +3,7 @@ import { Plus, Upload, Search, ArrowUpRight } from "lucide-react";
 import { PageHeader, EmptyState, Badge, SetupNotice } from "@/components/ui";
 import { database, isConfigured } from "@/lib/supabase";
 import { queryTerm } from "@/lib/validation";
-import type { RecordData } from "@/lib/directory";
+import { recordName, type RecordData } from "@/lib/directory";
 export default async function Directory({
   searchParams,
 }: {
@@ -35,7 +35,7 @@ export default async function Directory({
   if (configured) {
     const db = await database();
     let request = db
-      .from(entity)
+      .from(entity === "contacts" ? "directory_contacts_list" : "accounts")
       .select("*", { count: "exact" })
       .order(sort, { ascending })
       .order("id")
@@ -44,7 +44,7 @@ export default async function Directory({
       request =
         entity === "accounts"
           ? request.ilike("name", `%${q}%`)
-          : request.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
+          : request.ilike("display_name", `%${q}%`);
     if (entity === "accounts" && status) request = request.eq("status", status);
     if (entity === "accounts" && business)
       request = request.eq("business", business);
@@ -163,7 +163,7 @@ export default async function Directory({
                     <tr key={r.id}>
                       <td>
                         <Link href={`/directory/${entity}/${r.id}`}>
-                          {r.name ?? `${r.first_name} ${r.last_name}`}
+                          {recordName(r)}
                         </Link>
                         <div className="muted">{r.institution_type}</div>
                       </td>

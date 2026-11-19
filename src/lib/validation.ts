@@ -5,8 +5,8 @@ export const accountSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(2, "Enter an institution name of at least 2 characters.")
-    .max(200),
+    .min(1, "Enter an organization name.")
+    .max(250),
   institution_type: z.enum([
     "University",
     "Faculty",
@@ -37,6 +37,13 @@ export const contactSchema = z.object({
   phone: optionalText(60),
   account_id: z.uuid(),
   notes: optionalText(5000),
+});
+export const accountDirectorySchema = accountSchema.extend({ address: optionalText() });
+export const contactDirectorySchema = contactSchema.omit({ account_id: true }).extend({
+  first_name: z.string().trim().min(1).max(200),
+  last_name: optionalText(200),
+  address: optionalText(),
+  organization: optionalText(),
 });
 export const uuid = z.uuid();
 export function queryTerm(value: unknown) {

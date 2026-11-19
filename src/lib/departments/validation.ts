@@ -2,14 +2,20 @@ import { z } from "zod";
 import type { Section } from "./types";
 export const id = z.uuid("Choose an existing record from the list.");
 export const revision = z.coerce.number().int().min(1).max(2147483647);
-export function validate(section: Section, input: unknown) {
+export function validate(
+  section: Section,
+  input: unknown,
+  namedDirectory = false,
+) {
   const shape: Record<string, z.ZodType> = {};
   for (const f of [...section.fields, ...(section.extraFields ?? [])]) {
     let schema: z.ZodType;
     if (f.type === "project" || f.type === "party") continue;
     if (f.type === "reference")
       schema =
-        f.reference === "departments"
+        namedDirectory && f.reference === "accounts"
+          ? z.string().trim().min(1).max(250)
+          : f.reference === "departments"
           ? z.enum([
               "sales",
               "marketing",
@@ -71,8 +77,13 @@ export function validate(section: Section, input: unknown) {
     shape.area = z.string().trim().max(200).default("");
   }
   if (section.fields.some((f) => f.type === "party")) {
-    shape.party_type = z.enum(["accounts", "contacts"]);
-    shape.party_id = id;
+    if (namedDirectory) {
+      shape.organization = z.string().trim().max(250);
+      shape.contact = z.string().trim().max(200);
+    } else {
+      shape.party_type = z.enum(["accounts", "contacts"]);
+      shape.party_id = id;
+    }
   }
   if (section.slug === "issues") shape.project_id = id;
   for (const f of [...section.fields, ...(section.extraFields ?? [])])
@@ -156,6 +167,16 @@ export function validate(section: Section, input: unknown) {
           message: "Choose a project or enter an area, using one option only.",
         });
       if (
+        namedDirectory &&
+        section.slug === "follow-ups" &&
+        Boolean(v.organization) === Boolean(v.contact)
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["party"],
+          message: "Enter either a contact name or an organization name.",
+        });
+      if (
         section.slug === "follow-ups" &&
         v.last_contact &&
         String(v.follow_up_date) < String(v.last_contact)
@@ -173,7 +194,7 @@ export function validate(section: Section, input: unknown) {
         typeof result.due_at === "string"
       )
         result.due_at += "T00:00:00Z";
-      if (section.fields.some((f) => f.type === "party")) {
+      if (!namedDirectory && section.fields.some((f) => f.type === "party")) {
         result.account_id = v.party_type === "accounts" ? v.party_id : null;
         result.contact_id = v.party_type === "contacts" ? v.party_id : null;
         delete result.party_type;

@@ -37,7 +37,7 @@ export async function saveDepartment(
       "Employee access with department write permission is required. No record was saved.",
       form,
     );
-  const result = validate(section, Object.fromEntries(form));
+  const result = validate(section, Object.fromEntries(form), true);
   if (!result.success)
     return fail(
       result.error.issues
@@ -49,21 +49,24 @@ export async function saveDepartment(
       form,
     );
   const data = result.data;
-  // Link registrations to an existing contact by institution/email; never create or overwrite contacts.
-  if (section.slug === "registrations") {
-    const r = await access.db
-      .from("contacts")
-      .select("id")
-      .eq("account_id", data.account_id)
-      .ilike("email", String(data.email).replace(/[\\%_]/g, "\\$&"))
-      .maybeSingle();
-    if (r.error)
-      return fail(
-        "The participant's institution/contact could not be verified. Try again.",
-        form,
-      );
-    data.contact_id = r.data?.id ?? null;
+  const names: Record<string, unknown> = {};
+  if (section.slug === "follow-ups") {
+    names.organization = data.organization;
+    names.contact = data.contact;
+    delete data.organization;
+    delete data.contact;
+  } else {
+    const organizationField = section.fields.find((field) => field.reference === "accounts");
+    if (organizationField) {
+      names.organization = data[organizationField.key];
+      delete data[organizationField.key];
+    } else if (section.slug === "opportunities") {
+      names.organization = data.organization_name;
+    }
+    if (section.slug === "registrations") names.contact = data.participant_name;
+    if (section.slug === "conferences") names.contact = data.contact_person;
   }
+  if (Object.keys(names).length) data.directory_names = names;
   let response;
   if (recordId) {
     const v = revision.safeParse(form.get("revision"));
@@ -91,7 +94,9 @@ export async function saveDepartment(
   if (response.error) {
     const code = response.error.code;
     return fail(
-      code === "23505"
+      code === "P0001" || (code === "42501" && response.error.message.includes("directory write permission"))
+        ? response.error.message
+        : code === "23505"
         ? section.slug === "caution"
           ? "This LCID already exists. Open the existing Caution record instead."
           : "This participant/session or history entry already exists. Open the existing record instead."
@@ -112,6 +117,7 @@ export async function saveDepartment(
       "This record was changed or removed by someone else. Your work was not overwritten. Reopen the latest version.",
       form,
     );
+  if (Object.keys(names).length) revalidatePath("/directory");
   revalidatePath(modulePath(dept, slug));
   revalidatePath(modulePath(dept));
   redirect(

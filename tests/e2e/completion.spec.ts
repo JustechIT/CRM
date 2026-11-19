@@ -219,7 +219,7 @@ test("Password recovery is reachable from login and rejects expired or unverifie
   await expect(page.getByRole("button", { name: "Save new password", exact: true })).toBeDisabled();
 });
 
-test("Justech and Al-Fikr opportunities use a normal Organization text field while subscription customers stay linked", async ({ page }) => {
+test("Justech and Al-Fikr opportunities use a normal Organization text field and subscription customers use text inputs", async ({ page }) => {
   for (const scope of ["justech-sales", "alfikr-sales"]) {
     await page.goto(`/modules/${scope}/opportunities?new=1`);
     const organization = page.getByRole("textbox", { name: "Organization", exact: false });
@@ -240,7 +240,7 @@ test("Justech and Al-Fikr opportunities use a normal Organization text field whi
       await page.evaluate(() => { document.documentElement.dataset.theme = "light"; });
     }
     await page.goto(`/modules/${scope}/subscriptions?new=1`);
-    await expect(page.getByRole("combobox", { name: "Customer", exact: false })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Customer", exact: false })).toBeVisible();
     await expect(page.getByRole("combobox", { name: /^Product/ })).toBeVisible();
   }
 });

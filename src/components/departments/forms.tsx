@@ -10,94 +10,47 @@ import {
 import { modulePath, value } from "@/lib/departments/config";
 import type { Section, RecordRow } from "@/lib/departments/types";
 import { ReferencePicker } from "./reference-picker";
-function ChoiceField({
+function ProjectField({
   section,
-  field,
   source,
   fields,
   canWrite,
 }: {
   section: Section;
-  field: "project" | "party";
   source: Record<string, unknown> | undefined;
   fields?: Record<string, string>;
   canWrite: boolean;
 }) {
-  const isProject = field === "project";
-  const initialType = isProject
-    ? fields
-      ? fields.project_id
-        ? "projects"
-        : "area"
-      : value(source, "project_id") || !value(source, "area")
-        ? "projects"
-        : "area"
-    : (fields?.party_type ??
-      (value(source, "contact_id") ? "contacts" : "accounts"));
-  const [type, setType] = useState(initialType);
+  const initialId = fields?.project_id ?? value(source, "project_id");
+  const area = fields?.area ?? value(source, "area");
+  const [type, setType] = useState(initialId || !area ? "projects" : "area");
   const mode = useId();
-  const initialId = isProject
-    ? value(source, "project_id")
-    : value(source, type === "contacts" ? "contact_id" : "account_id");
-  const fieldName = isProject ? "project_id" : "party_id";
-  const savedId = fields?.[fieldName] ?? initialId;
-  const label =
-    fields?.[fieldName + "_label"] ??
-    value(source, isProject ? "project_id_label" : "party_label");
   return (
     <fieldset className="department-choice">
-      <legend>
-        {isProject ? "Project / Area" : "Contact / Organization"} *
-      </legend>
-      <label htmlFor={mode}>{isProject ? "Link to" : "Reference type"}</label>
-      <select
-        id={mode}
-        name={isProject ? undefined : "party_type"}
-        value={type}
-        onChange={(e) => setType(e.target.value)}
-      >
-        {isProject ? (
-          <>
-            <option value="projects">Existing project</option>
-            <option value="area">Area</option>
-          </>
-        ) : (
-          <>
-            <option value="accounts">Organization</option>
-            <option value="contacts">Contact</option>
-          </>
-        )}
+      <legend>Project / Area *</legend>
+      <label htmlFor={mode}>Link to</label>
+      <select id={mode} value={type} onChange={(e) => setType(e.target.value)}>
+        <option value="projects">Existing project</option>
+        <option value="area">Area</option>
       </select>
-      {isProject && type === "area" ? (
+      {type === "area" ? (
         <>
           <input type="hidden" name="project_id" value="" />
           <label>
             Area
-            <input
-              name="area"
-              required
-              maxLength={200}
-              defaultValue={fields?.area ?? value(source, "area")}
-            />
+            <input name="area" required maxLength={200} defaultValue={area} />
           </label>
         </>
       ) : (
         <>
-          {isProject && <input type="hidden" name="area" value="" />}
+          <input type="hidden" name="area" value="" />
           <ReferencePicker
-            key={type}
-            name={fieldName}
-            label={
-              isProject
-                ? "Project"
-                : type === "accounts"
-                  ? "Organization"
-                  : "Contact"
-            }
-            entity={type as "projects" | "accounts" | "contacts"}
+            name="project_id"
+            label="Project"
+            entity="projects"
             department={section.department}
-            initialId={type === initialType ? savedId : ""}
-            initialLabel={type === initialType ? label : ""}
+            initialId={initialId}
+            initialLabel={fields?.project_id_label ?? value(source, "project_id_label")}
             disabled={!canWrite}
           />
         </>
@@ -155,7 +108,13 @@ export function DepartmentForm({
       )}
       <div className="form-grid">
         {[...section.fields, ...(section.extraFields ?? [])].map((f) =>
-          f.type === "reference" ? (
+          f.type === "reference" && f.reference === "accounts" ? (
+            <label key={f.key}>
+              {f.label}{f.required ? " *" : ""}
+              <input name={f.key} required={f.required} maxLength={250}
+                defaultValue={state.fields?.[f.key] ?? value(source, f.key + "_label")} />
+            </label>
+          ) : f.type === "reference" ? (
             <ReferencePicker
               key={f.key}
               name={f.key}
@@ -177,11 +136,25 @@ export function DepartmentForm({
               disabled={!canWrite}
               required={f.required}
             />
-          ) : f.type === "project" || f.type === "party" ? (
-            <ChoiceField
+          ) : f.type === "party" ? (
+            <fieldset key={f.key} className="department-choice">
+              <legend>Contact / Organization *</legend>
+              <p>Enter one name.</p>
+              <label>
+                Contact
+                <input name="contact" maxLength={200}
+                  defaultValue={state.fields?.contact ?? value(source, "contact_name")} />
+              </label>
+              <label>
+                Organization
+                <input name="organization" maxLength={250}
+                  defaultValue={state.fields?.organization ?? (source?.account_id ? value(source, "party_label") : "")} />
+              </label>
+            </fieldset>
+          ) : f.type === "project" ? (
+            <ProjectField
               key={f.key}
               section={section}
-              field={f.type}
               source={source}
               fields={state.fields}
               canWrite={canWrite}
@@ -265,7 +238,7 @@ export function DepartmentForm({
         {section.department === "alfikr-sales" &&
         section.slug === "opportunities"
           ? "* Required fields. Type the organization and product names directly."
-          : "* Required fields. Reference choices come from existing records; no duplicate organizations, employees or products are created."}
+          : "* Required fields. New contact and organization names are saved to Accounts & Contacts."}
       </p>
       <div className="form-actions">
         <Link

@@ -24,16 +24,6 @@ export default async function NewRecord({
         </section>
       </>
     );
-  let accounts: { id: string; name: string }[] = [];
-  if (entity === "contacts") {
-    const { data, error } = await access.db
-      .from("accounts")
-      .select("id,name")
-      .order("name")
-      .limit(500);
-    if (error) throw new Error("Unable to load institutions.");
-    accounts = data ?? [];
-  }
   return (
     <>
       <PageHeader
@@ -41,7 +31,7 @@ export default async function NewRecord({
         description="A little context makes every conversation better."
       />
       <section className="panel">
-        <RecordForm entity={entity} accounts={accounts} />
+        <RecordForm entity={entity} />
       </section>
     </>
   );

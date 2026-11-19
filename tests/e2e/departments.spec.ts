@@ -156,7 +156,7 @@ test("Search, status and sort filters work across all three departments", async 
     await expect(page).not.toHaveURL(/q=/);
   }
 });
-test("Operations offers clear project/area and contact/organization choices", async ({
+test("Operations offers clear project/area and contact and organization text fields", async ({
   page,
 }) => {
   await page.goto("/modules/justech-operations/tasks?new=1");
@@ -168,12 +168,13 @@ test("Operations offers clear project/area and contact/organization choices", as
     .getByRole("textbox", { name: "Area", exact: true })
     .fill("Internal delivery");
   await page.goto("/modules/justech-operations/follow-ups?new=1");
-  await page
-    .getByLabel("Reference type", { exact: true })
-    .selectOption("contacts");
-  await expect(
-    page.getByRole("combobox", { name: "Contact *", exact: true }),
-  ).toBeDisabled();
+  for (const name of ["Contact", "Organization"]) {
+    const field = page.getByRole("textbox", { name, exact: true });
+    await field.fill("A new name");
+    await expect(field).toHaveValue("A new name");
+    await field.clear();
+    await expect(page.getByRole("combobox", { name, exact: true })).toHaveCount(0);
+  }
 });
 test("Legacy Operations URLs open the new sections and navigation stays responsive", async ({
   page,

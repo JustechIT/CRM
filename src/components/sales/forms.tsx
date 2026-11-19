@@ -89,17 +89,24 @@ export function SalesForm({
       {kind && <input type="hidden" name="kind" value={kind} />}
       <div className="form-grid">
         {definition.fields.map((field) =>
-          field.type === "account" ||
-          field.type === "product" ||
+          field.type === "account" ? (
+            <label key={field.key}>
+              {field.label} *
+              <input
+                name={field.key}
+                required
+                maxLength={250}
+                defaultValue={state.fields?.[field.key] ?? value(source, "account_name")}
+              />
+            </label>
+          ) : field.type === "product" ||
           field.type === "subscription" ? (
             <SalesLookup
               key={`${field.key}-${state.error}`}
               name={field.key}
               label={field.label}
               entity={
-                field.type === "account"
-                  ? "accounts"
-                  : field.type === "subscription"
+                field.type === "subscription"
                     ? "subscriptions"
                     : "products"
               }
@@ -109,9 +116,7 @@ export function SalesForm({
                 state.fields?.[field.key + "_label"] ??
                 value(
                   source,
-                  field.type === "account"
-                    ? "account_name"
-                    : field.type === "subscription"
+                  field.type === "subscription"
                       ? "subscription_label"
                       : "product_name",
                 )
@@ -230,7 +235,7 @@ export function SalesForm({
         <span>
           {section === "opportunities"
             ? "* Required fields. Type the organization and product names directly."
-            : "* Required fields. Institutions come from Accounts & Contacts."}
+            : "* Required fields. New organization names are saved to Accounts & Contacts."}
         </span>
         <Link
           href={`${salesBase}/subscriptions?catalog=1`}

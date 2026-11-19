@@ -50,11 +50,12 @@ export type RecordData = {
   notes?: string;
   job_title?: string;
   department?: string;
-  account_id?: string;
+  account_id?: string | null;
+  address?: string;
   created_at?: string;
   updated_at?: string;
   owner_id?: string;
 };
 export function recordName(r: RecordData) {
-  return r.name ?? `${r.first_name} ${r.last_name}`;
+  return r.name ?? [r.first_name, r.last_name].filter(Boolean).join(" ");
 }

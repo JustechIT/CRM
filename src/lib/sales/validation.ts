@@ -22,7 +22,10 @@ const optionalDecimal = z
   .union([z.literal(""), decimal])
   .transform((v) => v || null);
 const references = {
-  account_id: z.uuid("Select an existing institution."),
+  account_id: z.union([
+    z.uuid("Enter an organization name."),
+    z.object({ name: requiredText() }),
+  ]),
   product_id: z.uuid("Select an existing product."),
 };
 const schemas = {

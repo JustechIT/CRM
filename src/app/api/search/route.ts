@@ -18,9 +18,9 @@ export async function GET(req: NextRequest) {
       .order("name")
       .limit(8),
     db
-      .from("contacts")
-      .select("id,first_name,last_name,accounts(name)")
-      .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%`)
+      .from("directory_contacts_list")
+      .select("id,display_name")
+      .ilike("display_name", `%${term}%`)
       .order("last_name")
       .limit(8),
   ]);
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
         })),
         ...(contacts.data ?? []).map((c) => ({
           id: c.id,
-          label: `${c.first_name} ${c.last_name}`,
+          label: c.display_name,
           type: "contacts",
         })),
       ],
